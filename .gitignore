@@ -1,0 +1,8 @@
+wandb/
+
+venv/
+env/
+.env/
+.venv/
+
+*.pyc
