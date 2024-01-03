@@ -153,6 +153,7 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
             torch.save(model.state_dict(), rf'ml_part\weights\logP\logP_RTLogD_best_loss_{run_name}.pth')
             best_vloss = avg_vloss
 
+
         if use_wandb is True:
             wandb.log({"loss/train": avg_loss, 
                         "loss/val": avg_vloss, 
@@ -164,6 +165,7 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
                         "mae/val": val_metrics['mae'],
                         "r^2/val": val_metrics['r_score']})
         print('LOSS train: {} valid: {}, lr: {}'.format(avg_loss, avg_vloss, lr))
+
 
 
 def main(train_set, test_set, args, exp_config):
