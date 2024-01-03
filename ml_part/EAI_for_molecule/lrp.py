@@ -45,7 +45,9 @@ class Lrp:
             "CF3": "C(F)(F)F", 
             "CH2F": "CF", 
             "gem-CF2": "C(F)(F)", 
-            "CHF2": "C(F)(F)"
+            "CHF2": "C(F)(F)",
+            "CHF": "CF",
+            "non-F": ""
         }
         return functional_group_to_smiles[functional_group]
 

@@ -4,8 +4,8 @@ import torch
 
 def load_logP_model(exp_config, args):
     logP_model = load_model(exp_config).to(args['device'])
-    # checkpoint = torch.load(r"C:\work\DrugDiscovery\RT_LogP_with_pKa_model\RTlogD\final_model/RTlogD/model_pretrain_76.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
-    checkpoint = torch.load(r"ml_part\weights\logP\logP_RTLogD_best_loss_comfy-wave-9.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
+    checkpoint = torch.load(r"ml_part\weights\logP\model_pretrain_76_default_weights.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
+    # checkpoint = torch.load(r"ml_part\weights\logP\logP_RTLogD_best_loss_comfy-wave-9.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
     logP_model.load_state_dict(checkpoint)
 
     return logP_model
