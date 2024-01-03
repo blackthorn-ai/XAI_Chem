@@ -46,8 +46,8 @@ def init_wandb():
             "is AttentiveFPRegressor freezed": False,
             "optimizer": "Adam(lr=0.001, weight_decay=0.9)",
             "loss": "MSELoss",
-            "scheduler": "ReduceLROnPlateau(mode='min', patience=40, factor=0.2, min_lr=0.00002)",
-            "info": "gnn.train(False), readout.train(True), shuffle=True"
+            "scheduler": "ReduceLROnPlateau(mode='min', patience=100, factor=0.5, min_lr=0.00002)",
+            "info": "gnn.train(True), readout.train(True), shuffle=True"
         }
     )
 
@@ -97,9 +97,9 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
     test_loader = DataLoader(dataset=_test_set, batch_size=exp_config['batch_size'],
                              collate_fn=collate_molgraphs, num_workers=args['num_workers'])
     
-    optimizer = Adam(model.readout.parameters(), lr=0.001, weight_decay=0.9)
+    optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.9)
     criterion = MSELoss()
-    scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=40, factor=0.2, min_lr=0.00002)
+    scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=100, factor=0.5, min_lr=0.00002)
 
     best_vloss = pow(10, 3)
     for epoch in tqdm(range(num_epochs)):
@@ -151,6 +151,7 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
         lr = optimizer.param_groups[0]['lr']
         if avg_vloss < best_vloss and save_best_model is True:
             torch.save(model.state_dict(), rf'ml_part\weights\logP\logP_RTLogD_best_loss_{run_name}.pth')
+            best_vloss = avg_vloss
 
         if use_wandb is True:
             wandb.log({"loss/train": avg_loss, 
@@ -162,7 +163,7 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
                         "mse/val": val_metrics['mse'],
                         "mae/val": val_metrics['mae'],
                         "r^2/val": val_metrics['r_score']})
-        print('LOSS train: {} valid: {}, lr: {}'.format(loss, vloss, lr))
+        print('LOSS train: {} valid: {}, lr: {}'.format(avg_loss, avg_vloss, lr))
 
 
 def main(train_set, test_set, args, exp_config):

@@ -13,7 +13,7 @@ from constants import ModelType
 
 SMILES = "FC(F)(F)C1CNC1​"
 functional_group = "CF3"
-output_svg_path = r'data/output_EAI/output_logP.svg'
+output_svg_path = r'data/output_EAI/output_logP_DEFAULT_WEIGHTS.svg'
 
 if __name__ == '__main__':
     with open(r'ml_part\configs\args.pickle', 'rb') as file:
