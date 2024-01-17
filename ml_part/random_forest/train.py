@@ -5,11 +5,14 @@ from hyperopt import fmin, tpe, hp
 from functools import partial
 import pickle
 import pandas as pd
+import numpy as np
 
 class RFTrain:
-    def __init__(self, smiles_filepath, X, y, is_pKa=True):
+    def __init__(self, smiles_filepath, X, y, is_pKa=True, k_folds=None):
         with open(smiles_filepath, 'rb') as handle:
             self.smiles_to_index = pickle.load(handle)
+
+        np.random.seed(42)
 
         self.type = "pKa" if is_pKa else "logP"
         self.X = X
@@ -22,7 +25,7 @@ class RFTrain:
                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_acid_data.csv', 
                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_amine_data.csv']
 
-        self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test()
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(k_folds=k_folds)
         # self.split_train_test()
         # self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
         self.space = {
@@ -34,7 +37,7 @@ class RFTrain:
         }
 
 
-    def split_train_test(self):
+    def split_train_test(self, k_folds=None):
         test_indexes = []
         for test_data_path in self.test_data_paths:
             if self.type not in test_data_path:
@@ -55,13 +58,17 @@ class RFTrain:
         X_test = self.X.loc[test_indexes]
         y_test = self.y.loc[test_indexes]
 
+        if k_folds is not None:
+            folds_indexes = np.random.randint(0, k_folds, len(train_indexes))
+            X_train['fold_id'] = folds_indexes
+
         return X_train, X_test, y_train, y_test
 
 
     def train(self, 
               max_depth:int=10, 
               max_features:int=77, 
-              min_samples_leaf:int=2, 
+              min_samples_leaf:int=1, 
               min_samples_split:int=9, 
               n_estimators:int=262):
         model = RandomForestRegressor(n_estimators=n_estimators, 
@@ -71,8 +78,9 @@ class RFTrain:
                                       min_samples_split=min_samples_split,
                                       random_state=42)
 
-        
-        model.fit(self.X_train, self.y_train)
+        self.X_train.drop(columns=['fold_id'])
+        self.y_train.drop(columns=['fold_id'])
+        model.fit(self.X_train.drop(columns=['fold_id']), self.y_train.drop(columns=['fold_id']))
 
         y_pred = model.predict(self.X_test)
         mse = mean_squared_error(self.y_test, y_pred)
@@ -84,9 +92,19 @@ class RFTrain:
     @staticmethod
     def objective(params, X_train, y_train):
         model = RandomForestRegressor(**params)
-        # Приклад - використовуємо крос-валідацію для оцінки якості моделі
-        score = cross_val_score(model, X_train, y_train, cv=2, scoring='neg_mean_squared_error').mean()
-        return -score  # hyperopt розглядає максимізацію, тому ми використовуємо обернене MSE
+        
+        cv_indices_dict = {0: [], 1: []}
+        index = 0
+        for _, row in X_train.iterrows():
+            cv_indices_dict[row['fold_id']].append(index)
+            index += 1
+        cv_indices = [[cv_indices_dict[0], cv_indices_dict[1]], [cv_indices_dict[1], cv_indices_dict[0]]]
+
+        X_train.drop(columns=['fold_id'])
+        # y_train.drop(columns=['fold_id'])
+
+        score = cross_val_score(model, X_train, y_train, cv=cv_indices, scoring='neg_mean_squared_error').mean()
+        return -score
 
 
     def find_best_params_with_hyperopt(self):
@@ -94,7 +112,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=200, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=10000, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams
