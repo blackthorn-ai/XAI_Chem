@@ -23,7 +23,7 @@ rf_train = RFTrain(X=X,
                    y=y,
                    smiles_filepath=smiles_filepath,
                    is_pKa=False,
-                   k_folds=2)
+                   k_folds=3)
 
 y_train = rf_train.y_train
 X_train = rf_train.X_train
@@ -31,10 +31,12 @@ X_train = rf_train.X_train
 y_test = rf_train.y_test
 X_test = rf_train.X_test
 
+print(X_train)
+
 train_df = pd.concat([X_train, y_train], axis=1)
 test_df = pd.concat([X_test, y_test], axis=1)
 
 # print(train_df.describe())
 
-train_df.to_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\H2O_Auto_ML_cv\train_logP_data.csv')
-test_df.to_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\H2O_Auto_ML_cv\test_logP_data.csv')
+train_df.to_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\H2O_Auto_ML_cv_3\train_logP_data.csv')
+test_df.to_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\H2O_Auto_ML_cv_3\test_logP_data.csv')

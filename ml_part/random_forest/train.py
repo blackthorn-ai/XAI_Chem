@@ -93,17 +93,17 @@ class RFTrain:
     def objective(params, X_train, y_train):
         model = RandomForestRegressor(**params)
         
-        cv_indices_dict = {0: [], 1: []}
-        index = 0
-        for _, row in X_train.iterrows():
-            cv_indices_dict[row['fold_id']].append(index)
-            index += 1
-        cv_indices = [[cv_indices_dict[0], cv_indices_dict[1]], [cv_indices_dict[1], cv_indices_dict[0]]]
+        # cv_indices_dict = {0: [], 1: []}
+        # index = 0
+        # for _, row in X_train.iterrows():
+        #     cv_indices_dict[row['fold_id']].append(index)
+        #     index += 1
+        # cv_indices = [[cv_indices_dict[0], cv_indices_dict[1]], [cv_indices_dict[1], cv_indices_dict[0]]]
 
         X_train.drop(columns=['fold_id'])
         # y_train.drop(columns=['fold_id'])
 
-        score = cross_val_score(model, X_train, y_train, cv=cv_indices, scoring='neg_mean_squared_error').mean()
+        score = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_squared_error').mean()
         return -score
 
 
@@ -112,7 +112,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=10000, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=100, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams

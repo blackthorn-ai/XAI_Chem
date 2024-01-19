@@ -24,17 +24,11 @@ def calculate_dipole_moment(mol):
     rdPartialCharges.ComputeGasteigerCharges(mol)
     center_of_mass = [0.0, 0.0, 0.0]
 
-    distances = []
-    charges = []
     dipole_moment = 0
     for atom in mol.GetAtoms():
         pos = mol.GetConformer().GetAtomPosition(atom.GetIdx())
         distance = calculate_distance(center_of_mass, [pos.x, pos.y, pos.z])
-        # print([pos.x, pos.y, pos.z])
         charge = atom.GetDoubleProp("_GasteigerCharge")
-
-        distances.append(distance)
-        charges.append(charge)
 
         dipole_moment += distance * charge
     

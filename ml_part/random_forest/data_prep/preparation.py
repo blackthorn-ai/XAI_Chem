@@ -12,6 +12,7 @@ class DataPreparation:
     def __init__(self, path_to_data: str):
         np.random.seed(0)
         self.df = pd.read_csv(path_to_data, index_col=0)
+        print("nF" in list(self.df.columns))
         self.targets = ['pKa', 'logP']
 
     def prepare_data_for_RF(self, 
@@ -48,6 +49,7 @@ class DataPreparation:
             
             _df_local = _df[columns].copy()
         
+        print(columns)
         for feature_name in _df_local.keys():
             _df_local[feature_name] = literal_return(_df_local[feature_name])
 
