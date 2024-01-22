@@ -20,18 +20,41 @@ def calculate_distance(point1, point2):
     return ((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2 + (point2[2] - point1[2])**2)**0.5
 
 
-def calculate_dipole_moment(mol):
-    rdPartialCharges.ComputeGasteigerCharges(mol)
-    center_of_mass = [0.0, 0.0, 0.0]
+def calculate_dipole_moment(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+    AllChem.EmbedMolecule(mol, randomSeed=42)
 
-    dipole_moment = 0
+    AllChem.MMFFSanitizeMolecule(mol)
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    rdPartialCharges.ComputeGasteigerCharges(mol)
+
+    charges = []
+    coordinates = []
     for atom in mol.GetAtoms():
         pos = mol.GetConformer().GetAtomPosition(atom.GetIdx())
-        distance = calculate_distance(center_of_mass, [pos.x, pos.y, pos.z])
         charge = atom.GetDoubleProp("_GasteigerCharge")
 
-        dipole_moment += distance * charge
-    
+        charges.append(charge)
+        coordinates.append(pos)
+
+
+    charges_multiply_coordinates = coordinates.copy()
+    for charges_multiply_coordinate_index in range(len(charges_multiply_coordinates)):
+        for coordinate in charges_multiply_coordinates[charges_multiply_coordinate_index]:
+            coordinate *= charges[charges_multiply_coordinate_index]
+
+    dipole_moment_vector = [0, 0, 0]
+    for charges_multiply_coordinate_index in range(len(charges_multiply_coordinates)):
+        # print(charges_multiply_coordinates[charges_multiply_coordinate_index])
+        dipole_moment_vector[0] += charges_multiply_coordinates[charges_multiply_coordinate_index][0]
+        dipole_moment_vector[1] += charges_multiply_coordinates[charges_multiply_coordinate_index][1]
+        dipole_moment_vector[2] += charges_multiply_coordinates[charges_multiply_coordinate_index][2]
+        # print(dipole_moment_vector)
+
+    dipole_moment = math.sqrt(pow(dipole_moment_vector[0], 2) + pow(dipole_moment_vector[1], 2) + pow(dipole_moment_vector[2], 2))
+
     return dipole_moment
 
 

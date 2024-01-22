@@ -50,7 +50,7 @@ def obtain_features_rdkit(df_row):
     # F atom fraction
     f_atom_fraction = df_row['F atom fraction']
     # dipole moment
-    whole_dipole_momentum = calculate_dipole_moment(mol) 
+    whole_dipole_momentum = calculate_dipole_moment(smiles) 
     # molecule volume
     molecule_volume = AllChem.ComputeMolVolume(mol)
     # molecule weight
