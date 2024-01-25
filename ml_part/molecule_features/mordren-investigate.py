@@ -10,6 +10,7 @@ import numpy as np
 from scipy import stats
 
 from constants import mandatory_features
+from utils_3d import Molecule3DFeatures
 from utils import calculate_linear_distance, calculate_f_group_freedom,\
       mol_cycles_amount, atoms_num_in_cycles_divide_by_amount_cycles, nature_of_cycle,\
       get_amount_of_chiral_centers, calculate_dipole_moment, calculate_sasa, calculate_positive_negative_charges_area,\

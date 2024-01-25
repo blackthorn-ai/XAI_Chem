@@ -1,6 +1,6 @@
 import math
 from rdkit import Chem
-from rdkit.Chem import rdchem, rdMolTransforms, rdForceFieldHelpers, rdPartialCharges
+from rdkit.Chem import rdchem, rdMolTransforms, rdForceFieldHelpers, rdPartialCharges, rdFreeSASA
 from rdkit.Chem import AllChem, Descriptors
 from rdkit.Geometry import Point3D
 from rdkit.Chem.rdchem import RWMol
@@ -26,9 +26,10 @@ class Molecule3DFeatures:
         self.f_group = f_group
         self.identificator = identificator
 
+        self.mol_2d = Chem.MolFromSmiles(smiles)
         self.smiles = smiles
         self.mol = Molecule3DFeatures.prepare_molecule(smiles)
-        self.min_energy_conf_index, self.min_energy = Molecule3DFeatures.find_conf_with_min_energy(self.mol)
+        self.min_energy_conf_index, self.min_energy, self.mol = Molecule3DFeatures.find_conf_with_min_energy(self.mol)
         
         self.dipole_moment = self.calculate_dipole_moment()
         self.dihedral_angle_value = self.calculate_dihedral_angle()
@@ -39,6 +40,7 @@ class Molecule3DFeatures:
         self.flat_angle_between_atoms_in_cycle_1, self.flat_angle_between_atoms_in_cycle_2 = self.calculate_flat_angle_between_atoms_in_cycle()
         self.flat_angle_between_atoms_in_f_group_center_1, self.flat_angle_between_atoms_in_f_group_center_2 = self.calculate_flat_angle_between_atoms_in_f_group_center()
 
+        self.tpsa_with_fluor = self.calculate_TPSA_with_fluor()
 
     @staticmethod
     def prepare_molecule(smiles):
@@ -65,7 +67,7 @@ class Molecule3DFeatures:
                 min_energy_conf_index = index
                 min_energy = min(min_energy, energy)
 
-        return min_energy_conf_index, min_energy
+        return min_energy_conf_index, min_energy, mol
 
 
     @staticmethod
@@ -77,8 +79,8 @@ class Molecule3DFeatures:
         x, y, z = 0, 0, 0
         for atom_idx in atoms_idx:
             x += mol.GetConformer(conf_id).GetAtomPosition(atom_idx)[0]
-            y += mol.GetConformer(conf_id).GetAtomPosition(atom_idx)[0]
-            z += mol.GetConformer(conf_id).GetAtomPosition(atom_idx)[0]
+            y += mol.GetConformer(conf_id).GetAtomPosition(atom_idx)[1]
+            z += mol.GetConformer(conf_id).GetAtomPosition(atom_idx)[2]
         
         x /= len(atoms_idx)
         y /= len(atoms_idx)
@@ -96,13 +98,45 @@ class Molecule3DFeatures:
 
 
     @staticmethod
+    def change_vector_direction(mol, 
+                                X1:int, R_1:int, 
+                                conf_id:int):
+        # only completes when f_group is "secondary amine"
+        # we have to change direction of X1R-1 to (-1) * X1R1
+        # X1 is in the middle between R(-1) and R1, so R1_x = 
+        conf = mol.GetConformer(conf_id)
+
+        Rx_1 = conf.GetAtomPosition(R_1)[0]
+        Ry_1 = conf.GetAtomPosition(R_1)[1]
+        Rz_1 = conf.GetAtomPosition(R_1)[2]
+
+        Xx1 = conf.GetAtomPosition(X1)[0]
+        Xy1 = conf.GetAtomPosition(X1)[1]
+        Xz1 = conf.GetAtomPosition(X1)[2]
+        
+        Rx1 = 2 * Xx1 - Rx_1
+        Ry1 = 2 * Xy1 - Ry_1
+        Rz1 = 2 * Xz1 - Rz_1
+
+        conf.SetAtomPosition(R_1, Point3D(Rx1,Ry1,Rz1))
+        return mol, R_1
+
+
+    @staticmethod
     def dihedral_angle(mol, 
                        iAtomId:int, jAtomId:int, kAtomId:int, lAtomId:int, 
                        conf_id:int):
         
         conf = mol.GetConformer(conf_id)
 
-        return rdMolTransforms.GetDihedralDeg(conf, iAtomId, jAtomId, kAtomId, lAtomId)
+        return abs(rdMolTransforms.GetDihedralDeg(conf, iAtomId, jAtomId, kAtomId, lAtomId))
+
+
+    @staticmethod
+    def is_atom_in_cycle(mol, atom_id):
+        atom = mol.GetAtomWithIdx(atom_id)
+
+        return atom.IsInRing()
 
 
     def calculate_dihedral_angle(self):
@@ -131,7 +165,8 @@ class Molecule3DFeatures:
                 R1 = nitro_amine_matches[0][1]
             elif "secondary" in self.identificator.lower():
                 X1 = nitro_amine_matches[0][1]
-                self.mol, R1 = Molecule3DFeatures.set_average_atoms_position(self.mol, [nitro_amine_matches[0][0], nitro_amine_matches[1][0]], self.min_energy_conf_index)
+                self.mol, R_1 = Molecule3DFeatures.set_average_atoms_position(self.mol, [nitro_amine_matches[0][0], nitro_amine_matches[1][0]], self.min_energy_conf_index)
+                self.mol, R1 = Molecule3DFeatures.change_vector_direction(self.mol, X1, R_1=R_1, conf_id=self.min_energy_conf_index)
 
         X2, R2 = None, None
         f_group_submol = Chem.MolFromSmiles(f_group_smiles)
@@ -156,7 +191,13 @@ class Molecule3DFeatures:
 
         if len(set([X1, X2, R1, R2])) != 4:
             if len(set([X1, X2, R1, R2])) > 1:
-                print("SAME x1 or x2 or r1 or r2", self.smiles)
+                pass
+                # print("SAME x1 or x2 or r1 or r2", self.smiles)
+            return None
+        
+        if not Molecule3DFeatures.is_atom_in_cycle(mol=self.mol, atom_id=f_group_matches[0][0]):
+            # print(f"X1: {X1} or X2: {X2} is not in the cycle, smiles: {self.smiles}")
+            self.X1, self.X2, self.R1, self.R2 = None, None, None, None
             return None
 
         dihedral_angle_value = Molecule3DFeatures.dihedral_angle(self.mol, R2, X2, X1, R1, self.min_energy_conf_index) 
@@ -219,8 +260,8 @@ class Molecule3DFeatures:
 
 
     def calculate_flat_angle_between_atoms_in_f_group_center(self):
-        # returns two flat angles(in Deg) between 2 atoms in the cycle 
-        # and 1 atom connected to the functional group:
+        # returns two flat angles(in Deg) between 2 atoms in the center 
+        # of functional group and 1 atom in cycle:
         # 1) R2X2R1; 
         # 2) R1X1R2.
         if len(set([self.X1, self.X2, self.R1, self.R2])) != 4:
@@ -257,3 +298,19 @@ class Molecule3DFeatures:
         dipole_moment = math.sqrt(pow(dipole_moment_vector[0], 2) + pow(dipole_moment_vector[1], 2) + pow(dipole_moment_vector[2], 2))
 
         return dipole_moment
+
+
+    def calculate_TPSA_with_fluor(self):
+        tpsa = Descriptors.TPSA(self.mol)
+        fluor_idxs = [atom.GetIdx() for atom in self.mol.GetAtoms() if atom.GetSymbol().lower() == 'f']
+        tpsa_f = tpsa
+
+        radii = rdFreeSASA.classifyAtoms(self.mol)
+        rdFreeSASA.CalcSASA(self.mol, radii)
+        # print(radii)
+        for fluor_idx in fluor_idxs:
+            atom_sasa = self.mol.GetAtoms()[fluor_idx].GetProp('SASA')
+            # print(atom_sasa)
+            tpsa_f += float(atom_sasa)
+
+        return tpsa_f
