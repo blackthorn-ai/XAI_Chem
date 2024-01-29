@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from rdkit import Chem
 
 EXCEL_PATH = r'C:\work\DrugDiscovery\main_git\XAI_Chem\ml_part\molecule_features\pKa_Prediction_Starting data_2023.11.22.xlsx'
@@ -13,13 +14,14 @@ index_to_drop = []
 for index, row in df.iterrows():
     if pd.isnull(row['Smiles']):
         index_to_drop.append(index)
+        identificators.append(np.nan)
         continue
     smiles = row['Smiles']
     
     identificator = df_updated.loc[df_updated.Smiles == smiles, 'Unnamed: 21'].item()
     identificators.append(identificator)
 
-df = df.drop(index_to_drop)
+# df = df.drop(index_to_drop)
 df['identificator'] = identificators
 
 df.to_csv(PATH_TO_SAVE_CSV)

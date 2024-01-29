@@ -18,12 +18,19 @@ class DataPreparation:
     def prepare_data_for_RF(self, 
                             is_pKa:bool=True, 
                             use_mandatory_features:bool=True, 
-                            is_remove_outliers:bool=True):
+                            is_remove_outliers:bool=True,
+                            outliers_features_to_skip:list()=None,
+                            is_remove_nan:bool=True):
         
         _df = self.df.copy()
+
         X_y = self.prepare_data(_df, 
-                              use_mandatory_features=use_mandatory_features,
-                              is_remove_outliers=is_remove_outliers)
+                                use_mandatory_features=use_mandatory_features,
+                                is_remove_outliers=is_remove_outliers,
+                                outliers_features_to_skip=outliers_features_to_skip)
+
+        if is_remove_nan: X_y = X_y.dropna()
+        print(f"Remains rows:{len(X_y)}, amount of features: {len(X_y.keys())}")
 
         y = X_y['logP']
         if is_pKa == True:
@@ -36,7 +43,8 @@ class DataPreparation:
     @staticmethod
     def prepare_data(_df:pd.DataFrame, 
                        use_mandatory_features:bool=True,
-                       is_remove_outliers:bool=True):
+                       is_remove_outliers:bool=True,
+                       outliers_features_to_skip:list()=None):
         
         # x_df = _df.copy().drop(['pKa', 'logP'], axis=1)
         target_features = ['pKa', 'logP']
@@ -56,13 +64,15 @@ class DataPreparation:
         if is_remove_outliers:
             outlier_indexes_set = set()
             for feature_name in _df_local.keys():
+                if feature_name in outliers_features_to_skip:
+                    continue
+                
                 if _df_local[feature_name].dtype == object or len(_df_local[feature_name].unique()) < 10:
                     continue
 
                 outlier_indexes = DataPreparation.detect_outliers(features=_df_local[feature_name], 
                                                                   threshold=3)
-                if "dihedral_angle_" in feature_name:
-                    continue
+                
                 if len(outlier_indexes) > 0:
                     print(feature_name, outlier_indexes)
                 
@@ -72,7 +82,7 @@ class DataPreparation:
             _df_local = _df_local.drop(index=list(outlier_indexes_set))
         
         _df_local = _df_local.dropna(subset=target_features)
-        print(f"Remains rows:{len(_df_local)}, amount of features: {len(_df_local.keys())}")
+        
         return _df_local
 
 
@@ -83,7 +93,7 @@ class DataPreparation:
         # normal distribution
         if pvalue >= 0.05:
             outlier_indeces = detect_outliers_zscore(data=features,
-                                                     threshold=3)
+                                                     threshold=threshold)
         # not normal ditribution
         else:
             outlier_indeces = detect_outliers_iqr(data=features)

@@ -4,7 +4,7 @@ from mordred import Calculator, descriptors
 
 from constants import mandatory_features
 
-path = r'data\updated_features\remained_features.csv'
+path = r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\updated_features\remained_features_25.01.csv'
 
 df = pd.read_csv(path, index_col=0)
 
@@ -26,7 +26,8 @@ for key_name in df.columns:
 for feature_3D_in_my_data in features_3D_in_my_data:
     if feature_3D_in_my_data in mandatory_features:
         print("Mandatory feature: ", end="")
-    print(feature_3D_in_my_data)
+    if "mor" not in feature_3D_in_my_data.lower():
+        print(feature_3D_in_my_data)
 
 print(f"amount of 2D features: {amount_of_2D_features}, amount of 3d: {amount_of_3D_features}")
 print(len(df.keys()))
@@ -43,9 +44,9 @@ print(len(df.keys()))
 #             count += 1
 #             print(corr_matrix.keys()[column_index], corr_matrix.keys()[row_index], corr_matrix_values[row_index, column_index])
 
-print(count)
+# print(count)
 
-corr_matrix_sorted = corr_matrix.keys().sort_values()
+# corr_matrix_sorted = corr_matrix.keys().sort_values()
 # print(corr_matrix_sorted)
 
 # print(features_3d_df['Mor03'])

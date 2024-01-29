@@ -26,6 +26,10 @@ class RFTrain:
                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_amine_data.csv']
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(k_folds=k_folds)
+        self.X_train.fillna(0, inplace=True)
+        self.X_test.fillna(0, inplace=True)
+        self.y_train.fillna(0, inplace=True)
+        self.y_test.fillna(0, inplace=True)
         # self.split_train_test()
         # self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
         self.space = {
@@ -103,7 +107,7 @@ class RFTrain:
         X_train.drop(columns=['fold_id'])
         # y_train.drop(columns=['fold_id'])
 
-        score = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_squared_error').mean()
+        score = cross_val_score(model, X_train, y_train, cv=2, scoring='neg_mean_squared_error').mean()
         return -score
 
 
@@ -112,7 +116,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=100, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=1000, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams

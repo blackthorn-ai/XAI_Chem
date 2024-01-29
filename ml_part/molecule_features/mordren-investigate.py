@@ -39,7 +39,14 @@ def obtain_mordred_features(smiles):
 
 
 def obtain_features_rdkit(df_row):
+    
     smiles = df_row['Smiles']
+    identificator = row['identificator']
+    f_group = row['F group']
+    molFeatures = Molecule3DFeatures(smiles=smiles,
+                                     identificator=identificator,
+                                     f_group=f_group)
+    
     mol = Chem.MolFromSmiles(smiles)
     mol = Chem.AddHs(mol)
     AllChem.EmbedMolecule(mol, randomSeed=42)
@@ -59,7 +66,7 @@ def obtain_features_rdkit(df_row):
     # calc sasa
     sasa = calculate_sasa(mol)
     # positive/negative area partial charges
-    positive_charge_area, negative_charge_area = calculate_positive_negative_charges_area(mol)
+    # positive_charge_area, negative_charge_area = calculate_positive_negative_charges_area(mol)
     # TPSA + F
     tpsa = Descriptors.TPSA(mol)
     f = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol().lower() == 'f')
@@ -88,24 +95,37 @@ def obtain_features_rdkit(df_row):
     rdkit_features = {"cis/trans": cis_trans,
                       "f_to_fg": f_to_fg,
                       "f_atom_fraction": f_atom_fraction,
-                      "dipole_moment": round(whole_dipole_momentum),
                       "mol_volume": round(molecule_volume, 2),
                       "mol_weight": round(molecule_weight, 2),
                       "sasa": round(sasa, 2),
                     #   "negative_area_charges": round(negative_charge_area, 2),
                     #   "positive_area_charges": round(positive_charge_area, 2),
                       "tpsa": tpsa,
-                      "tpsa+f": tpsa_f,
-                      "linear_distance": round(linear_distance, 2),
+                    #   "linear_distance": round(linear_distance, 2),
                       "f_freedom": round(f_group_freedom, 2),
                       "mol_num_cycles": mol_num_cycles,
                       "avg_atoms_in_cycle": round(atoms_num_in_cycles, 2),
                       "mol_nature": atom_alim_cycle,
-                      "chirality": round(chirality, 2)
+                      "chirality": round(chirality, 2),
+
+                      "dipole_moment": molFeatures.dipole_moment,
+                      "dihedral_angle": molFeatures.dihedral_angle_value,
+                      
+                      "distance_between_atoms_in_f_group_centers": molFeatures.distance_between_atoms_in_f_group_centers,
+                      "distance_between_atoms_in_cycle_and_f_group": molFeatures.distance_between_atoms_in_cycle,
+                      
+                      "angle_X1X2R2": molFeatures.flat_angle_between_atoms_in_cycle_1,
+                      "angle_X2X1R1": molFeatures.flat_angle_between_atoms_in_cycle_2,
+
+                      "angle_R2X2R1": molFeatures.flat_angle_between_atoms_in_f_group_center_1,
+                      "angle_R1X1R2": molFeatures.flat_angle_between_atoms_in_f_group_center_2,
+
+                      "tpsa+f": molFeatures.tpsa_with_fluor
+                    
                       }
-    rdkit_features.update(functional_groups_amount_dict)
-    rdkit_features.update(all_distance_from_group_to_f)
-    rdkit_features.update(dihedral_angles_f_group_dict)
+    # rdkit_features.update(functional_groups_amount_dict)
+    # rdkit_features.update(all_distance_from_group_to_f)
+    # rdkit_features.update(dihedral_angles_f_group_dict)
     return rdkit_features
 
 
@@ -248,9 +268,9 @@ def detect_and_remove_outliers(features_df, target_df):
 
 
 if __name__ == '__main__':
-    excel_file_path = r'ml_part\molecule_features\pKa_Prediction_Starting data_2023.11.22.xlsx'
-    csv_features_file_to_save = r'data\updated_features\remained_features.csv'
-    df = pd.read_excel(excel_file_path, sheet_name="Main_List")
+    csv_file_path = r'data\init_data\pKa_Prediction_Starting data_2024.01.25.csv'
+    csv_features_file_to_save = r'data\updated_features\remained_features_25.01.csv'
+    df = pd.read_csv(csv_file_path)
 
     smiles_to_features_index = {}
     all_smiles_features = []
