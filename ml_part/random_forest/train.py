@@ -116,7 +116,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=1000, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=200, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams
