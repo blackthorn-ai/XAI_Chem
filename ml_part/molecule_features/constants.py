@@ -1,4 +1,5 @@
 mandatory_features = ["cis/trans", 
+                      "identificator",
                       "f_to_fg",
                       "f_atom_fraction",
                       "dipole_moment", 

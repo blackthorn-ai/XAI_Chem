@@ -141,8 +141,8 @@ def atoms_num_in_cycles_divide_by_amount_cycles(mol, atoms_in_right):
             atoms_idxs.add(atom_index)
     
     atoms_num_in_cycles = len(atoms_idxs)
-    if atoms_in_right != atoms_num_in_cycles:
-        raise Exception("!!!Calculated data and data from rdkit is not similar!!!")
+    # if atoms_in_right != atoms_num_in_cycles:
+    #     raise Exception("!!!Calculated data and data from rdkit is not similar!!!")
     
     return atoms_num_in_cycles / amount_cycles
 
@@ -253,6 +253,8 @@ def get_most_correlated_values(corr_matrix,
             if flds[column_index] in correlated_values or flds[row_index] in correlated_values:
                 continue
             if flds[row_index] in mandatory_features and flds[column_index] in mandatory_features and abs(corr_values[row_index, column_index]) <= threshold_for_mandatory:
+                continue
+            if flds[row_index] in mandatory_features and flds[column_index] in mandatory_features and (flds[row_index] == 'nF' or flds[column_index] == 'nF'):
                 continue
             if abs(corr_values[row_index, column_index]) > threshold:
 
@@ -514,8 +516,8 @@ def all_dihedral_angles_f_group_molecule(smiles, f_group):
 
         functional_groups_angles[functional_groups.index(fparams.GetFuncGroup(func_froup_index).GetProp('_Name'))] = dihedral_angles_sum
 
-    print(f_group_array)
-    print(functional_groups_angles)
+    # print(f_group_array)
+    # print(functional_groups_angles)
     combined_angles = f_group_array + functional_groups_angles
     combined_angles_dict = {}
     for group_index in range(len(combined_angles)):

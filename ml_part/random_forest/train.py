@@ -15,6 +15,7 @@ class RFTrain:
         np.random.seed(42)
 
         self.type = "pKa" if is_pKa else "logP"
+        self.smiles_column_name = "smiles"
         self.X = X
         self.y = y
 
@@ -47,7 +48,7 @@ class RFTrain:
             if self.type not in test_data_path:
                 continue
             test_df = pd.read_csv(test_data_path)
-            for smiles in test_df['smiles']:
+            for smiles in test_df[self.smiles_column_name]:
                 if self.smiles_to_index[smiles] in self.X.index:
                     test_indexes.append(self.smiles_to_index[smiles])
 

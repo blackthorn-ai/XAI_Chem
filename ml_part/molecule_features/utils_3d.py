@@ -13,7 +13,7 @@ submol1 = Chem.MolFromSmiles(carboxile)
 submol2 = Chem.MolFromSmiles(nitro_amine)
 
 class Molecule3DFeatures:
-    def __init__(self, smiles, f_group, identificator) -> None:
+    def __init__(self, smiles, f_group=None, identificator=None) -> None:
 
         self.functional_group_to_smiles = {
             "CF3": "CC(F)(F)F", 
@@ -32,13 +32,15 @@ class Molecule3DFeatures:
         self.min_energy_conf_index, self.min_energy, self.mol = Molecule3DFeatures.find_conf_with_min_energy(self.mol)
         
         self.dipole_moment = self.calculate_dipole_moment()
-        self.dihedral_angle_value = self.calculate_dihedral_angle()
-        
-        self.distance_between_atoms_in_cycle = self.calculate_distance_between_atoms_in_cycle()
-        self.distance_between_atoms_in_f_group_centers = self.calculate_distance_between_atoms_in_f_group_centers()
 
-        self.flat_angle_between_atoms_in_cycle_1, self.flat_angle_between_atoms_in_cycle_2 = self.calculate_flat_angle_between_atoms_in_cycle()
-        self.flat_angle_between_atoms_in_f_group_center_1, self.flat_angle_between_atoms_in_f_group_center_2 = self.calculate_flat_angle_between_atoms_in_f_group_center()
+        if self.f_group is not None and self.identificator is not None:
+            self.dihedral_angle_value = self.calculate_dihedral_angle()
+            
+            self.distance_between_atoms_in_cycle = self.calculate_distance_between_atoms_in_cycle()
+            self.distance_between_atoms_in_f_group_centers = self.calculate_distance_between_atoms_in_f_group_centers()
+
+            self.flat_angle_between_atoms_in_cycle_1, self.flat_angle_between_atoms_in_cycle_2 = self.calculate_flat_angle_between_atoms_in_cycle()
+            self.flat_angle_between_atoms_in_f_group_center_1, self.flat_angle_between_atoms_in_f_group_center_2 = self.calculate_flat_angle_between_atoms_in_f_group_center()
 
         self.tpsa_with_fluor = self.calculate_TPSA_with_fluor()
 
@@ -201,7 +203,7 @@ class Molecule3DFeatures:
             return None
 
         dihedral_angle_value = Molecule3DFeatures.dihedral_angle(self.mol, R2, X2, X1, R1, self.min_energy_conf_index) 
-        print(f"X1: {X1}, R1: {R1}, X2: {X2}, R2: {R2}, smiles: {self.smiles}, identiicator: {self.identificator}, f_group: {self.f_group}, dihedral angle: {dihedral_angle_value}") 
+        # print(f"X1: {X1}, R1: {R1}, X2: {X2}, R2: {R2}, smiles: {self.smiles}, identiicator: {self.identificator}, f_group: {self.f_group}, dihedral angle: {dihedral_angle_value}") 
         return dihedral_angle_value
     
 
@@ -277,17 +279,30 @@ class Molecule3DFeatures:
 
         charges = []
         coordinates = []
+        x_centroid, y_centroid, z_centroid = 0, 0, 0
         for atom in self.mol.GetAtoms():
             pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(atom.GetIdx())
             charge = atom.GetDoubleProp("_GasteigerCharge")
 
             charges.append(charge)
-            coordinates.append(pos)
+            coordinates.append([pos[0], pos[1], pos[2]])
+
+            x_centroid += pos[0]
+            y_centroid += pos[1]
+            z_centroid += pos[2]
+
+        x_centroid /= len(self.mol.GetAtoms())
+        y_centroid /= len(self.mol.GetAtoms())
+        z_centroid /= len(self.mol.GetAtoms())
 
         charges_multiply_coordinates = coordinates.copy()
         for charges_multiply_coordinate_index in range(len(charges_multiply_coordinates)):
-            for coordinate in charges_multiply_coordinates[charges_multiply_coordinate_index]:
-                coordinate *= charges[charges_multiply_coordinate_index]
+            charges_multiply_coordinates[charges_multiply_coordinate_index][0] = \
+                (charges_multiply_coordinates[charges_multiply_coordinate_index][0] - x_centroid) * charges[charges_multiply_coordinate_index]
+            charges_multiply_coordinates[charges_multiply_coordinate_index][1] = \
+                (charges_multiply_coordinates[charges_multiply_coordinate_index][1] - y_centroid) * charges[charges_multiply_coordinate_index]
+            charges_multiply_coordinates[charges_multiply_coordinate_index][2] = \
+                (charges_multiply_coordinates[charges_multiply_coordinate_index][2] - z_centroid) * charges[charges_multiply_coordinate_index]
 
         dipole_moment_vector = [0, 0, 0]
         for charges_multiply_coordinate_index in range(len(charges_multiply_coordinates)):

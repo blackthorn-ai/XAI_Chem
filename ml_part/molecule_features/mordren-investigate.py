@@ -40,7 +40,7 @@ def obtain_mordred_features(smiles):
 
 def obtain_features_rdkit(df_row):
     
-    smiles = df_row['Smiles']
+    smiles = df_row[smiles_type]
     identificator = row['identificator']
     f_group = row['F group']
     molFeatures = Molecule3DFeatures(smiles=smiles,
@@ -53,6 +53,8 @@ def obtain_features_rdkit(df_row):
     pt = GetPeriodicTable()
     # cis/trans
     cis_trans = "" if pd.isnull(df_row['Stereo, F to FG']) else df_row['Stereo, F to FG']
+    # Identificator
+    identificator = identificator
     # Linear path(s) F to FG
     f_to_fg = df_row['Linear path(s) F to FG']
     # F atom fraction
@@ -84,15 +86,14 @@ def obtain_features_rdkit(df_row):
     # Chirality
     chirality = get_amount_of_chiral_centers(mol)
     # functional groups
-    functional_groups_amount_dict, functional_groups_dict = extract_functional_groups(smiles, df_row['F group'])
-    # print(functional_groups_amount_dict, df_row['F group'], smiles)
-    # dihedral angle between functional groups and f groups
-    all_distance_from_group_to_f = all_distance_between_functional_groups_and_f(smiles, functional_groups_dict)
-    # dihedral angle between functional groups and molecule
-    dihedral_angles_f_group_dict = all_dihedral_angles_f_group_molecule(smiles, df_row['F group'])
-    print(dihedral_angles_f_group_dict)
+    # functional_groups_amount_dict, functional_groups_dict = extract_functional_groups(smiles, df_row['F group'])
+    # # dihedral angle between functional groups and f groups
+    # all_distance_from_group_to_f = all_distance_between_functional_groups_and_f(smiles, functional_groups_dict)
+    # # dihedral angle between functional groups and molecule
+    # dihedral_angles_f_group_dict = all_dihedral_angles_f_group_molecule(smiles, df_row['F group'])
     # print(dihedral_angles_f_group_array, df_row['F group'])
     rdkit_features = {"cis/trans": cis_trans,
+                      "identificator": identificator,
                       "f_to_fg": f_to_fg,
                       "f_atom_fraction": f_atom_fraction,
                       "mol_volume": round(molecule_volume, 2),
@@ -130,7 +131,7 @@ def obtain_features_rdkit(df_row):
 
 
 def obtain_features(df_row):
-    smiles = df_row['Smiles']
+    smiles = df_row[smiles_type]
     
     rdkit_features = obtain_features_rdkit(df_row)
     mordred_features = obtain_mordred_features(smiles)
@@ -198,6 +199,7 @@ def calculate_correlation(features):
 
 def calculate_correlation_simple(df):
     df['cis/trans'] = df['cis/trans'].astype('category').cat.codes
+    df['identificator'] = df['identificator'].astype('category').cat.codes
 
     features_to_remove = set()
 
@@ -266,10 +268,11 @@ def detect_and_remove_outliers(features_df, target_df):
 
     return result_df
 
+smiles_type = 'Amides for LogP'
 
 if __name__ == '__main__':
     csv_file_path = r'data\init_data\pKa_Prediction_Starting data_2024.01.25.csv'
-    csv_features_file_to_save = r'data\updated_features\remained_features_25.01.csv'
+    csv_features_file_to_save = r'data\updated_features\remained_features_logP_01.02_v3.csv'
     df = pd.read_csv(csv_file_path)
 
     smiles_to_features_index = {}
@@ -281,19 +284,20 @@ if __name__ == '__main__':
     features_index = 0
 
     for value, row in tqdm(df.iterrows()):
+
+        if pd.isnull(row[smiles_type]):
+            continue
         
-        if value > 0:
-            features = obtain_features(row)
-            target_data = obtain_y(row)
+        features = obtain_features(row)
+        target_data = obtain_y(row)
 
-            all_smiles_features.append(features)
-            all_target_data.append(target_data)
+        all_smiles_features.append(features)
+        all_target_data.append(target_data)
+        
+        smiles_to_features_index[row[smiles_type]] = features_index
+        features_index += 1
 
-            # print(features)
-            
-            smiles_to_features_index[row['Smiles']] = features_index
-            features_index += 1
-        # if value > 3:
+        # if value > 5:
         #     break
 
     features_df = pd.DataFrame(all_smiles_features)
@@ -309,8 +313,8 @@ if __name__ == '__main__':
     result_df.to_csv(csv_features_file_to_save)
 
     # save smiles as pickle file
-    with open(r"data\updated_features\smiles_to_index.pkl", 'wb') as handle:
-        pickle.dump(smiles_to_features_index, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open(r"data\updated_features\logP_smiles_to_index.pkl", 'wb') as handle:
+    #     pickle.dump(smiles_to_features_index, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # result_df = detect_and_remove_outliers(remained_corr_features_df, target_df)
 
