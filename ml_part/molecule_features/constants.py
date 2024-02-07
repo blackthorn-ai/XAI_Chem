@@ -1,5 +1,5 @@
 mandatory_features = ["cis/trans", 
-                      "identificator",
+                      "identificator", "molecule_type", "amine_type",
                       "f_to_fg",
                       "f_atom_fraction",
                       "dipole_moment", 
@@ -32,10 +32,34 @@ mandatory_features = ["cis/trans",
 
 
 functional_group_to_smiles = {
-            "CF3": "CC(F)(F)F", 
-            "CH2F": "CCF", 
-            "gem-CF2": "CC(F)(F)", 
-            "CHF2": "CC(F)(F)",
-            "CHF": "CCF",
-            "non-F": ""
-        }
+    "CF3": "CC(F)(F)F", 
+    "CH2F": "CCF", 
+    "gem-CF2": "CC(F)(F)", 
+    "CHF2": "CC(F)(F)",
+    "CHF": "CCF",
+    "non-F": ""
+}
+
+identificator_to_amine_or_acid = {
+    "Carboxylic acid": 0,
+    "Primary amine": 1,
+    "Secondary amine": 1,
+}
+
+identificator_to_amine_type = {
+    "Carboxylic acid": 0, # NaN
+    "Primary amine": 1,
+    "Secondary amine": 2,
+}
+
+identificator_to_molecule_type = {
+    0: "Carboxylic acid",
+    1: "Primary amine",
+    2: "Secondary amine",
+}
+
+cis_trans_id_to_str = {
+    0: "",
+    1: "cis",
+    2: "trans"
+}

@@ -64,8 +64,24 @@ class RFTrain:
         y_test = self.y.loc[test_indexes]
 
         if k_folds is not None:
-            folds_indexes = np.random.randint(0, k_folds, len(train_indexes))
-            X_train['fold_id'] = folds_indexes
+            q_amount = 10
+            X_train['bin'] = pd.qcut(y_train, q=q_amount, labels=False)
+
+            X_train['fold_id'] = [0] * len(X_train)
+
+            for q in range(q_amount):
+                train_indexes = X_train.loc[X_train['bin'] == q, 'fold_id'].index
+
+                fold_id_array = np.array([0, 1] * (len(train_indexes) // 2))
+                if len(train_indexes) % 2:
+                    fold_id_array = np.append(fold_id_array, np.random.randint(0, 2))
+
+                np.random.shuffle(fold_id_array)
+
+                for train_index in range(len(train_indexes)):
+                    X_train.at[train_indexes[train_index], 'fold_id'] = fold_id_array[train_index]
+
+            X_train = X_train.drop(['bin'], axis=1)
 
         return X_train, X_test, y_train, y_test
 

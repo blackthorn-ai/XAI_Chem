@@ -6,8 +6,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-from ml_part.molecule_features.constants import mandatory_features
+from ml_part.molecule_features.constants import mandatory_features, identificator_to_molecule_type
 from ml_part.random_forest.data_prep.utils import detect_outliers_iqr, detect_outliers_zscore, literal_return
+
 
 class DataPreparation:
     def __init__(self, path_to_data: str, smiles_to_subgroup_pickle_file: str=None, smiles_to_index_pickle_file: str=None):
@@ -30,6 +31,7 @@ class DataPreparation:
     def prepare_data_for_RF(self, 
                             is_pKa:bool=True, 
                             subgroup_type:str=None,
+                            molecule_type:str=None,
                             use_mandatory_features:bool=True, 
                             is_remove_outliers:bool=True,
                             outliers_features_to_skip:list()=None,
@@ -42,6 +44,11 @@ class DataPreparation:
             raise ValueError("DataPreparation needs pickle file, smiles_to_index is None")
         
         _df = self.df.copy()
+
+        if molecule_type is not None:
+            _df = DataPreparation.select_specific_molecule_type(_df=_df,
+                                                                molecule_type_to_select=molecule_type)
+
         if subgroup_type is not None:
             _df = DataPreparation.select_specific_subgroup(_df=_df, 
                                                      subgroup_name=subgroup_type, 
@@ -64,6 +71,18 @@ class DataPreparation:
         X = X_y.copy().drop(self.targets, axis=1)
 
         return X, y
+
+
+    @staticmethod
+    def select_specific_molecule_type(_df:pd.DataFrame,
+                                      molecule_type_to_select:str):
+        subgroup_indexes_from_dataframe = []
+        for index, row in _df.iterrows():
+            molecule_type = identificator_to_molecule_type[row['identificator']]
+            if molecule_type_to_select.lower() in molecule_type.lower():
+                subgroup_indexes_from_dataframe.append(index)
+
+        return _df.loc[subgroup_indexes_from_dataframe]
 
 
     @staticmethod
@@ -114,13 +133,13 @@ class DataPreparation:
                                                                   threshold=3)
                 
                 if len(outlier_indexes) > 0:
-                    print(feature_name, outlier_indexes)
+                    print(f"{feature_name} outliers indexes: {outlier_indexes}")
                 
                 
                 outlier_indexes_set.update(set(outlier_indexes))
 
             dataframe_indexes = [_df_local.index[index] for index in list(outlier_indexes_set)]
-            print(_df_local.index)
+            # print(_df_local.index)
             _df_local = _df_local.drop(index=dataframe_indexes)
         
         _df_local = _df_local.dropna(subset=target_features)
