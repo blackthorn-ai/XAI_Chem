@@ -30,8 +30,11 @@ class Molecule3DFeatures:
         self.smiles = smiles
         self.mol = Molecule3DFeatures.prepare_molecule(smiles)
         self.min_energy_conf_index, self.min_energy, self.mol = Molecule3DFeatures.find_conf_with_min_energy(self.mol)
+        self.mol_optimized = self.mol
         
         self.dipole_moment = self.calculate_dipole_moment()
+        self.mol_volume = self.calculate_volume()
+        self.sasa = self.calculate_sasa()
 
         if self.f_group is not None and self.identificator is not None:
             self.dihedral_angle_value = self.calculate_dihedral_angle()
@@ -43,6 +46,7 @@ class Molecule3DFeatures:
             self.flat_angle_between_atoms_in_f_group_center_1, self.flat_angle_between_atoms_in_f_group_center_2 = self.calculate_flat_angle_between_atoms_in_f_group_center()
 
         self.tpsa_with_fluor = self.calculate_TPSA_with_fluor()
+
 
     @staticmethod
     def prepare_molecule(smiles):
@@ -141,6 +145,22 @@ class Molecule3DFeatures:
         return atom.IsInRing()
 
 
+    def calculate_volume(self):
+        mol_volume = AllChem.ComputeMolVolume(mol=self.mol,
+                                              confId=self.min_energy_conf_index)
+        
+        return mol_volume
+
+
+    def calculate_sasa(self):
+        mol_classify = rdFreeSASA.classifyAtoms(self.mol)
+        sasa = rdFreeSASA.CalcSASA(mol=self.mol, 
+                                   radii=mol_classify, 
+                                   confIdx=self.min_energy_conf_index)
+        
+        return sasa
+
+
     def calculate_dihedral_angle(self):
         f_group_smiles = self.functional_group_to_smiles[self.f_group]
 
@@ -192,9 +212,6 @@ class Molecule3DFeatures:
         self.X1, self.X2, self.R1, self.R2 = X1, X2, R1, R2
 
         if len(set([X1, X2, R1, R2])) != 4:
-            if len(set([X1, X2, R1, R2])) > 1:
-                pass
-                # print("SAME x1 or x2 or r1 or r2", self.smiles)
             return None
         
         if not Molecule3DFeatures.is_atom_in_cycle(mol=self.mol, atom_id=f_group_matches[0][0]):
@@ -217,7 +234,8 @@ class Molecule3DFeatures:
         X2_pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(self.X2)
 
         r_vector = (X2_pos[0] - X1_pos[0], X2_pos[1] - X1_pos[1], X2_pos[2] - X1_pos[2])
-        r_distance = math.sqrt(pow(2, r_vector[0]) + pow(2, r_vector[1]) + pow(2, r_vector[2]))
+        # r_distance = math.sqrt(pow(2, r_vector[0]) + pow(2, r_vector[1]) + pow(2, r_vector[2]))
+        r_distance = math.sqrt(pow(r_vector[0], 2) + pow(r_vector[1], 2) + pow(r_vector[2], 2))
 
         return r_distance
     
@@ -238,11 +256,12 @@ class Molecule3DFeatures:
         if len(set([self.X1, self.X2, self.R1, self.R2])) != 4:
             return None
 
-        X1_pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(self.R1)
-        X2_pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(self.R2)
+        R1_pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(self.R1)
+        R2_pos = self.mol.GetConformer(self.min_energy_conf_index).GetAtomPosition(self.R2)
 
-        R_vector = (X2_pos[0] - X1_pos[0], X2_pos[1] - X1_pos[1], X2_pos[2] - X1_pos[2])
-        R_distance = math.sqrt(pow(2, R_vector[0]) + pow(2, R_vector[1]) + pow(2, R_vector[2]))
+        R_vector = (R2_pos[0] - R1_pos[0], R2_pos[1] - R1_pos[1], R2_pos[2] - R1_pos[2])
+        # R_distance = math.sqrt(pow(2, R_vector[0]) + pow(2, R_vector[1]) + pow(2, R_vector[2]))
+        R_distance = math.sqrt(pow(R_vector[0], 2) + pow(R_vector[1], 2) + pow(R_vector[2], 2))
 
         return R_distance
 

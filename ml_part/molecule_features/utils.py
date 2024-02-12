@@ -20,6 +20,15 @@ def calculate_distance(point1, point2):
     return ((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2 + (point2[2] - point1[2])**2)**0.5
 
 
+def calculate_mol_volume(mol, 
+                         confId:int):
+    mol_volume = AllChem.ComputeMolVolume(mol=mol,
+                                          confId=confId)
+    
+    return mol_volume
+    
+
+
 def calculate_dipole_moment(smiles):
     mol = Chem.MolFromSmiles(smiles)
     mol = Chem.AddHs(mol)
@@ -58,9 +67,11 @@ def calculate_dipole_moment(smiles):
     return dipole_moment
 
 
-def calculate_sasa(mol):
+def calculate_sasa(mol, confId):
     mol_classify = rdFreeSASA.classifyAtoms(mol)
-    sasa = rdFreeSASA.CalcSASA(mol, mol_classify)
+    sasa = rdFreeSASA.CalcSASA(mol=mol, 
+                               radii=mol_classify, 
+                               confIdx=confId)
     
     return sasa
 
@@ -185,8 +196,11 @@ def is_chirality(mol):
 
 
 def get_amount_of_chiral_centers(mol):
-    chirality_centers = Chem.FindMolChiralCenters(mol)
+    mol = Chem.AddHs(mol)
+    AllChem.EmbedMolecule(mol)
     
+    Chem.AssignAtomChiralTagsFromStructure(mol)
+    chirality_centers = Chem.FindMolChiralCenters(mol)
     amount_of_chiral_centers = len(chirality_centers)
     
     return amount_of_chiral_centers
@@ -292,7 +306,7 @@ def remove_features_with_same_values(df):
         if col_to_drop in mandatory_features:
             print(f"Mandatory feature: \033[1m{col_to_drop}\033[0m was deleted due to only 1 unique value")
     
-    df.drop(cols_to_drop, axis=1)
+    df.drop(cols_to_drop, axis=1, inplace=True)
     
     return df
 

@@ -16,7 +16,8 @@ from utils import calculate_linear_distance, calculate_f_group_freedom,\
       get_amount_of_chiral_centers, calculate_dipole_moment, calculate_sasa, calculate_positive_negative_charges_area,\
       detect_outlier_indexes, remove_nan_from_corr_matrix, remove_features_with_same_values,\
       has_numbers, normalize_values, split_features_by_normalization, get_most_correlated_values,\
-      extract_functional_groups, all_distance_between_functional_groups_and_f, all_dihedral_angles_f_group_molecule
+      extract_functional_groups, all_distance_between_functional_groups_and_f, all_dihedral_angles_f_group_molecule,\
+      calculate_mol_volume
 
 
 def obtain_mordred_features(smiles):
@@ -46,6 +47,8 @@ def obtain_features_rdkit(df_row):
     molFeatures = Molecule3DFeatures(smiles=smiles,
                                      identificator=identificator,
                                      f_group=f_group)
+    mol_optimized = molFeatures.mol_optimized
+    min_energy_conf_index = molFeatures.min_energy_conf_index
     
     mol = Chem.MolFromSmiles(smiles)
     mol = Chem.AddHs(mol)
@@ -59,22 +62,12 @@ def obtain_features_rdkit(df_row):
     f_to_fg = df_row['Linear path(s) F to FG']
     # F atom fraction
     f_atom_fraction = df_row['F atom fraction']
-    # dipole moment
-    whole_dipole_momentum = calculate_dipole_moment(smiles) 
     # molecule volume
-    molecule_volume = AllChem.ComputeMolVolume(mol)
+    # molecule_volume = calculate_mol_volume(mol_optimized, min_energy_conf_index)
     # molecule weight
     molecule_weight = df_row['MW']
     # calc sasa
-    sasa = calculate_sasa(mol)
-    # positive/negative area partial charges
-    # positive_charge_area, negative_charge_area = calculate_positive_negative_charges_area(mol)
-    # TPSA + F
-    tpsa = Descriptors.TPSA(mol)
-    f = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol().lower() == 'f')
-    tpsa_f = tpsa + f
-    # linear distance in space
-    linear_distance = calculate_linear_distance(mol)
+    # sasa = calculate_sasa(mol_optimized, min_energy_conf_index)
     # Ступінь свободи F групи
     f_group_freedom = calculate_f_group_freedom(df_row['F group'])
     # Кількість циклів
@@ -83,6 +76,8 @@ def obtain_features_rdkit(df_row):
     atoms_num_in_cycles = atoms_num_in_cycles_divide_by_amount_cycles(mol, df_row['Atoms in ring'])
     # nature of cycles
     atom_alim_cycle = nature_of_cycle(mol)
+    # TPSA
+    tpsa = Descriptors.TPSA(mol)
     # Chirality
     chirality = get_amount_of_chiral_centers(mol)
     # functional groups
@@ -96,18 +91,17 @@ def obtain_features_rdkit(df_row):
                       "identificator": identificator,
                       "f_to_fg": f_to_fg,
                       "f_atom_fraction": f_atom_fraction,
-                      "mol_volume": round(molecule_volume, 2),
-                      "mol_weight": round(molecule_weight, 2),
-                      "sasa": round(sasa, 2),
-                    #   "negative_area_charges": round(negative_charge_area, 2),
-                    #   "positive_area_charges": round(positive_charge_area, 2),
+                      "mol_weight": molecule_weight,
                       "tpsa": tpsa,
-                    #   "linear_distance": round(linear_distance, 2),
-                      "f_freedom": round(f_group_freedom, 2),
+
+                      "f_freedom": f_group_freedom,
                       "mol_num_cycles": mol_num_cycles,
-                      "avg_atoms_in_cycle": round(atoms_num_in_cycles, 2),
+                      "avg_atoms_in_cycle": atoms_num_in_cycles,
                       "mol_nature": atom_alim_cycle,
-                      "chirality": round(chirality, 2),
+                      "chirality": chirality,
+
+                      "mol_volume": molFeatures.mol_volume,
+                      "sasa": molFeatures.sasa,
 
                       "dipole_moment": molFeatures.dipole_moment,
                       "dihedral_angle": molFeatures.dihedral_angle_value,
@@ -122,7 +116,6 @@ def obtain_features_rdkit(df_row):
                       "angle_R1X1R2": molFeatures.flat_angle_between_atoms_in_f_group_center_2,
 
                       "tpsa+f": molFeatures.tpsa_with_fluor
-                    
                       }
     # rdkit_features.update(functional_groups_amount_dict)
     # rdkit_features.update(all_distance_from_group_to_f)
@@ -198,8 +191,8 @@ def calculate_correlation(features):
 
 
 def calculate_correlation_simple(df):
-    df['cis/trans'] = df['cis/trans'].astype('category').cat.codes
-    df['identificator'] = df['identificator'].astype('category').cat.codes
+    if 'cis/trans' in df.columns: df['cis/trans'] = df['cis/trans'].astype('category').cat.codes
+    if 'identificator' in df.columns: df['identificator'] = df['identificator'].astype('category').cat.codes
 
     features_to_remove = set()
 
@@ -268,11 +261,11 @@ def detect_and_remove_outliers(features_df, target_df):
 
     return result_df
 
-smiles_type = 'Amides for LogP'
+smiles_type = 'Smiles'
 
 if __name__ == '__main__':
     csv_file_path = r'data\init_data\pKa_Prediction_Starting data_2024.01.25.csv'
-    csv_features_file_to_save = r'data\updated_features\remained_features_logP_01.02_v3.csv'
+    csv_features_file_to_save = r'data\updated_features\remained_features_pKa_08.02_v4_fixed_distances_chirality.csv'
     df = pd.read_csv(csv_file_path)
 
     smiles_to_features_index = {}
