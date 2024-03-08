@@ -1,6 +1,8 @@
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 from hyperopt import fmin, tpe, hp
 from functools import partial
 import pickle
@@ -99,32 +101,77 @@ class RFTrain:
                                       min_samples_split=min_samples_split,
                                       random_state=42)
 
-        self.X_train.drop(columns=['fold_id'])
-        self.y_train.drop(columns=['fold_id'])
         model.fit(self.X_train.drop(columns=['fold_id']), self.y_train.drop(columns=['fold_id']))
 
         y_pred = model.predict(self.X_test)
         mse = mean_squared_error(self.y_test, y_pred)
         print("Mean Squared Error:", mse)
 
+
+
         return model
     
+
+    @staticmethod
+    def calculate_metrics(true_values, pred_values):
+        mse = round(mean_squared_error(true_values, pred_values),3)
+        mae = round(mean_absolute_error(true_values, pred_values),3)
+        r_score = round(r2_score(true_values, pred_values),3)
+
+        return {"mse": mse,
+                "mae": mae,
+                "r^2": r_score,}
+
+
+    @staticmethod
+    def calculate_crossval_metrics(model, X_train, y_train):
+        cv1_indexes = X_train.index[X_train.loc[:, 'fold_id'] == 0]
+        cv1_x = X_train.loc[cv1_indexes]
+        cv1_y = y_train.loc[cv1_indexes]
+
+        cv2_indexes = X_train.index[X_train.loc[:, 'fold_id'] == 1]
+        cv2_x = X_train.loc[cv2_indexes]
+        cv2_y = y_train.loc[cv2_indexes]
+
+        cv1_x.drop(columns=['fold_id'], inplace=True)
+        cv2_x.drop(columns=['fold_id'], inplace=True)
+
+        model.fit(cv1_x, cv1_y)
+        cv2_y_pred = model.predict(cv2_x)
+        cv1_metrics = RFTrain.calculate_metrics(cv2_y, cv2_y_pred)
+
+        model.fit(cv2_x, cv2_y)
+        cv1_y_pred = model.predict(cv1_x)
+        cv2_metrics = RFTrain.calculate_metrics(cv1_y, cv1_y_pred)
+
+        cv_mse = (cv1_metrics['mse'] + cv2_metrics['mse']) / 2.
+        cv_mae = (cv1_metrics['mae'] + cv2_metrics['mae']) / 2.
+        cv_r2 = (cv1_metrics['r^2'] + cv2_metrics['r^2']) / 2.
+
+        cv_metrics = {"mse": cv_mse,
+                      "mae": cv_mae,
+                      "r^2": cv_r2,}
+        
+        return cv_metrics
+
+
+
 
     @staticmethod
     def objective(params, X_train, y_train):
         model = RandomForestRegressor(**params)
         
-        # cv_indices_dict = {0: [], 1: []}
-        # index = 0
-        # for _, row in X_train.iterrows():
-        #     cv_indices_dict[row['fold_id']].append(index)
-        #     index += 1
-        # cv_indices = [[cv_indices_dict[0], cv_indices_dict[1]], [cv_indices_dict[1], cv_indices_dict[0]]]
+        cv_indices_dict = {0: [], 1: []}
+        index = 0
+        for _, row in X_train.iterrows():
+            cv_indices_dict[row['fold_id']].append(index)
+            index += 1
+        cv_indices = [[cv_indices_dict[0], cv_indices_dict[1]], [cv_indices_dict[1], cv_indices_dict[0]]]
 
         X_train.drop(columns=['fold_id'])
         # y_train.drop(columns=['fold_id'])
 
-        score = cross_val_score(model, X_train, y_train, cv=2, scoring='neg_mean_squared_error').mean()
+        score = cross_val_score(model, X_train.drop(columns=['fold_id'], inplace=False), y_train, cv=cv_indices, scoring='neg_mean_squared_error').mean()
         return -score
 
 
@@ -133,7 +180,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=200, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=1000, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams

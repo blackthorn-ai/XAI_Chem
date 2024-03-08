@@ -15,9 +15,7 @@ from utils import calculate_linear_distance, calculate_f_group_freedom,\
       mol_cycles_amount, atoms_num_in_cycles_divide_by_amount_cycles, nature_of_cycle,\
       get_amount_of_chiral_centers, calculate_dipole_moment, calculate_sasa, calculate_positive_negative_charges_area,\
       detect_outlier_indexes, remove_nan_from_corr_matrix, remove_features_with_same_values,\
-      has_numbers, normalize_values, split_features_by_normalization, get_most_correlated_values,\
-      extract_functional_groups, all_distance_between_functional_groups_and_f, all_dihedral_angles_f_group_molecule,\
-      calculate_mol_volume
+      has_numbers, normalize_values, split_features_by_normalization, get_most_correlated_values
 
 
 def obtain_mordred_features(smiles):
