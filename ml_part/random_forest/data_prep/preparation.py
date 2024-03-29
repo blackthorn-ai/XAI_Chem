@@ -138,6 +138,7 @@ class DataPreparation:
                 
                 outlier_indexes_set.update(set(outlier_indexes))
 
+            outlier_indexes_set.add(124)
             dataframe_indexes = [_df_local.index[index] for index in list(outlier_indexes_set)]
             # print(_df_local.index)
             _df_local = _df_local.drop(index=dataframe_indexes)
@@ -148,8 +149,8 @@ class DataPreparation:
 
 
     @staticmethod
-    def detect_outliers(features:list(),
-                        threshold:int=3):
+    def detect_outliers(features: list(),
+                        threshold: int = 3):
         pvalue = stats.shapiro(features).pvalue
         # normal distribution
         if pvalue >= 0.05:
@@ -158,7 +159,7 @@ class DataPreparation:
         # not normal ditribution
         else:
             outlier_indeces = detect_outliers_iqr(data=features)
-
+        
         return outlier_indeces
 
 
