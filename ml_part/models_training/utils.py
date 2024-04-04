@@ -205,7 +205,7 @@ def load_dataset(args, df,name):
 
 def load_dataset(args, df,name):
     dataset = MoleculeCSVDataset(df=df,
-                                 smiles_to_graph=partial(smiles_to_bigraph,num_virtual_nodes=0),
+                                 smiles_to_graph=partial(smiles_to_bigraph, num_virtual_nodes=0, add_self_loop=True),
                                  node_featurizer=args['node_featurizer'],
                                  edge_featurizer=args['edge_featurizer'],
                                  smiles_column=args['smiles_column'],
