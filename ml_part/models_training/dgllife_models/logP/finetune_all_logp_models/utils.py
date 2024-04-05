@@ -14,7 +14,7 @@ from dgllife.utils import smiles_to_bigraph
 from dgllife.utils import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
 from dgllife.model.model_zoo.gat_predictor import GATPredictor
 
-def init_wandb():
+def init_wandb(train_mode: str = None):
     run = wandb.init(
         # set the wandb project where this run will be logged
         project="enamine-logP",
@@ -22,6 +22,7 @@ def init_wandb():
         # track hyperparameters and run metadata
         config={
             "learning_rate": 10 ** (-2.5),
+            "train_mode": train_mode,
             "batch_size": 32,
             "architecture": "AttentiveFP_canonical_Lipophilicity",
             "dataset": "data\logP_lipophilicity_data",

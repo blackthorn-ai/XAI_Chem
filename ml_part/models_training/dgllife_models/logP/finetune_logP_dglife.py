@@ -17,12 +17,12 @@ def init_wandb():
         
         # track hyperparameters and run metadata
         config={
-            "learning_rate": 0.00885553776774104,
+            "learning_rate": 0.011064509215476023,
             "batch_size": 16,
             "architecture": "AttentiveFP_canonical_Lipophilicity",
             "dataset": "data\logP_lipophilicity_data",
-            "epochs": 100,
-            "optimizer": "Adam(lr=0.00885553776774104, weight_decay=10 ** 0.0006897008354482659)",
+            "epochs": 200,
+            "optimizer": "Adam(lr=0.011064509215476023, weight_decay=0.0006897008354482659)",
             "loss": "MSELoss",
             "scheduler": "None",
             "info": "gnn.train(False), readout.train(False), shuffle=True"
@@ -33,9 +33,9 @@ def init_wandb():
 
 def train(model_service, train_set, test_set, num_epochs=200, use_wandb=True, save_best_model=True):
 
-    lr = 0.00885553776774104
+    lr = 0.011064509215476023
     weight_decay = 0.0006897008354482659
-    batch_size = 16
+    batch_size = 32
 
     model = model_service.model
 
@@ -128,8 +128,8 @@ if __name__ == "__main__":
 
     model_service = LipophilicityModelService()
 
-    train_csv = r'data\logP_lipophilicity_data\train.csv'
-    test_csv = r'data\logP_lipophilicity_data\test.csv'
+    train_csv = r'data\logP_lipophilicity_data\gnn_cv\train.csv'
+    test_csv = r'data\logP_lipophilicity_data\gnn_cv\test.csv'
     
     train_df = pd.read_csv(train_csv)
     test_df = pd.read_csv(test_csv)

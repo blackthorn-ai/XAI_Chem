@@ -29,10 +29,21 @@ class LipophilicityModelService:
     def freeze_all(self):
         self.model.eval()
 
-    def train_mode(self):
-        self.model.gnn.eval()
-        self.model.readout.eval()
-        self.model.predict.train()
+    def train_mode(self, train_type: str = None):
+
+        if train_type == 'all_layers':
+            self.model.gnn.train()
+            self.model.readout.train()
+            self.model.predict.train()
+        elif train_type == 'predictor_and_readout':
+            self.model.gnn.eval()
+            self.model.readout.train()
+            self.model.predict.train()
+        elif train_type == 'all_layers' or train_type is None:
+            self.model.gnn.eval()
+            self.model.readout.eval()
+            self.model.predict.train()
+
 
     def eval_mode(self):
         self.model.gnn.eval()

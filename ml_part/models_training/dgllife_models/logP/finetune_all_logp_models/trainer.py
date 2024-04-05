@@ -18,7 +18,8 @@ crossvals_list = []
 class Trainer:
     def __init__(self) -> None:
         self.space = {
-            'lr': hp.loguniform('lr', -10, -3)
+            # 'lr': hp.loguniform('lr', -10, -3),
+            'train_type': hp.choice('train_type', ['only_predictor', 'predictor_and_readout', 'all_layers'])
         }
 
         train_csv = r'data\logP_lipophilicity_data\gnn_cv\train.csv'
@@ -39,7 +40,7 @@ class Trainer:
 
         objective_partial = partial(Trainer.optimization_function, X_train=self.train_df, model_name=model_name)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=7, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=3, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams
@@ -70,12 +71,12 @@ class Trainer:
 
             train_set_cv = load_dataset(train_df_cv)
             test_set_cv = load_dataset(test_df_cv)
-            loss_cv, metrics_cv, best_epoch_num, run_name = Trainer.train(model_service_cv, train_set_cv, test_set_cv,
-                                                                lr=params['lr'])
+            loss_cv, metrics_cv, best_epoch_num, run = Trainer.train(model_service_cv, train_set_cv, test_set_cv,
+                                                                          train_type=params['train_type'])
             
             cv_dict[f"cv_{cross_val_index}_loss"] = loss_cv
             cv_dict[f"cv_{cross_val_index}_best_epoch"] = best_epoch_num
-            cv_dict[f"cv_{cross_val_index}_run_name"] = run_name
+            cv_dict[f"cv_{cross_val_index}_run_name"] = run.name
             cv_dict[f"cv_{cross_val_index}_r^2"] = metrics_cv["r^2"]
             cv_dict[f"cv_{cross_val_index}_mse"] = metrics_cv["mse"]
             cv_dict[f"cv_{cross_val_index}_mae"] = metrics_cv["mae"]
@@ -90,6 +91,7 @@ class Trainer:
     @staticmethod
     def train(model_service, train_set, test_set, 
               lr=10**(-2.5), weight_decay=0.0006897, batch_size=16,
+              train_type: str = None,
               num_epochs=100, use_wandb=True, save_best_model=True):
 
         model = model_service.model
@@ -104,11 +106,11 @@ class Trainer:
         criterion = MSELoss()
         scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=5, factor=0.5, min_lr=0.000002)
 
-        run_name = init_wandb()
+        run_name = init_wandb(train_type)
         best_vloss = pow(10, 3)
         best_vmetrics = None
         best_vepoch = -1
-        model_service.train_mode()
+        model_service.train_mode(train_type=train_type)
         for epoch in tqdm(range(num_epochs)):
 
             running_loss = 0.0
@@ -118,9 +120,9 @@ class Trainer:
             for i, batch_data in enumerate(train_loader):
                 _, bg, labels, masks = batch_data
                 
-                # if torch.cuda.is_available():
-                #     bg = bg.cuda()
-                #     labels = labels.cuda()
+                if torch.cuda.is_available():
+                    bg = bg.cuda()
+                    labels = labels.cuda()
 
                 optimizer.zero_grad()
 
@@ -184,11 +186,11 @@ class Trainer:
                             "mae/val": val_metrics['mae'],
                             "r^2/val": val_metrics['r^2']})
 
-            print("TRAIN")
-            print(train_metrics)
-            print("VAL")
-            print(val_metrics)
-            print('LOSS train: {} valid: {}, lr: {}'.format(avg_loss, avg_vloss, lr))
+            # print("TRAIN")
+            # print(train_metrics)
+            # print("VAL")
+            # print(val_metrics)
+            # print('LOSS train: {} valid: {}, lr: {}'.format(avg_loss, avg_vloss, lr))
 
         wandb.finish()
         return best_vloss, best_vmetrics, best_vepoch, run_name
