@@ -29,8 +29,8 @@ if __name__ == "__main__":
     df = pd.read_csv(csv_path, index_col=0)
     df_test_splited_by_tanimoto = pd.read_csv(csv_logP_test_path, index_col=0)
 
-    lipophilicity_model = load_pretrained("AttentiveFP_canonical_Lipophilicity")
-    lipophilicity_model.load_state_dict(torch.load(r'ml_part\weights\logP_dgllife_lipophilicity\logP_best_loss_fragrant-meadow-26.pth'))
+    lipophilicity_model = load_pretrained("GAT_attentivefp_Lipophilicity")
+    lipophilicity_model.load_state_dict(torch.load(r'C:\work\DrugDiscovery\main_git\XAI_Chem\ml_part\weights\logP_dgllife_lipophilicity\GATPredictor_logP_best_loss.pth'))
 
     lipophilicity_model.eval()
 
@@ -43,14 +43,14 @@ if __name__ == "__main__":
         logP_smiles = row['Smiles']
         true_value = row['logP']
 
-        g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=CanonicalAtomFeaturizer(), edge_featurizer=CanonicalBondFeaturizer(self_loop=True))
-        # g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=AttentiveFPAtomFeaturizer(), edge_featurizer=AttentiveFPBondFeaturizer(self_loop=True))
+        # g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=CanonicalAtomFeaturizer(), edge_featurizer=CanonicalBondFeaturizer(self_loop=True))
+        g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=AttentiveFPAtomFeaturizer(), edge_featurizer=AttentiveFPBondFeaturizer(self_loop=True))
 
         g = g.to('cpu')
 
         with torch.no_grad():
-            prediction = model(g, g.ndata['h'], g.edata['e'])
-            # prediction = model(g, g.ndata['h'])
+            # prediction = model(g, g.ndata['h'], g.edata['e'])
+            prediction = model(g, g.ndata['h'])
             print(prediction.item(), true_value)
             true_logP.append(true_value)
             predicted_logP.append(prediction.item())

@@ -209,6 +209,7 @@ def load_dataset(args, df,name):
                                  node_featurizer=args['node_featurizer'],
                                  edge_featurizer=args['edge_featurizer'],
                                  smiles_column=args['smiles_column'],
+                                #  smiles_column="Smiles",
                                  cache_file_path=args['result_path'] +'/'+ str(name)+'_graph.bin',
                                  task_names=args['task'],
                                  n_jobs=args['num_workers'],

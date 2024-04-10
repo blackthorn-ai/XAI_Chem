@@ -15,6 +15,23 @@ from utils import load_model, load_dataset, collate_molgraphs, calculate_metrics
 
 crossvals_list = []
 
+class EarlyStopper:
+    def __init__(self, patience=20, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = pow(10,10)
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
 class Trainer:
     def __init__(self) -> None:
         self.space = {
@@ -105,8 +122,10 @@ class Trainer:
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         criterion = MSELoss()
         scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=5, factor=0.5, min_lr=0.000002)
+        early_stopper = EarlyStopper(patience=20, min_delta=0.001)
 
-        run_name = init_wandb(train_type)
+        run_name = ""
+        # run_name = init_wandb(train_type)
         best_vloss = pow(10, 3)
         best_vmetrics = None
         best_vepoch = -1
@@ -120,9 +139,9 @@ class Trainer:
             for i, batch_data in enumerate(train_loader):
                 _, bg, labels, masks = batch_data
                 
-                if torch.cuda.is_available():
-                    bg = bg.cuda()
-                    labels = labels.cuda()
+                # if torch.cuda.is_available():
+                #     bg = bg.cuda()
+                #     labels = labels.cuda()
 
                 optimizer.zero_grad()
 
@@ -175,16 +194,21 @@ class Trainer:
                 best_vmetrics = val_metrics
                 best_vepoch = epoch
 
-            if use_wandb is True:
-                wandb.log({"loss/train": avg_loss, 
-                            "loss/val": avg_vloss, 
-                            "lr": lr,
-                            "mse/train": train_metrics['mse'],
-                            "mae/train": train_metrics['mae'],
-                            "r^2/train": train_metrics['r^2'],
-                            "mse/val": val_metrics['mse'],
-                            "mae/val": val_metrics['mae'],
-                            "r^2/val": val_metrics['r^2']})
+            # if use_wandb is True:
+            #     wandb.log({"loss/train": avg_loss, 
+            #                 "loss/val": avg_vloss, 
+            #                 "lr": lr,
+            #                 "mse/train": train_metrics['mse'],
+            #                 "mae/train": train_metrics['mae'],
+            #                 "r^2/train": train_metrics['r^2'],
+            #                 "mse/val": val_metrics['mse'],
+            #                 "mae/val": val_metrics['mae'],
+            #                 "r^2/val": val_metrics['r^2']})
+                
+            if early_stopper.early_stop(avg_vloss):
+                break
+
+            scheduler.step(avg_vloss)
 
             # print("TRAIN")
             # print(train_metrics)
@@ -192,5 +216,5 @@ class Trainer:
             # print(val_metrics)
             # print('LOSS train: {} valid: {}, lr: {}'.format(avg_loss, avg_vloss, lr))
 
-        wandb.finish()
+        # wandb.finish()
         return best_vloss, best_vmetrics, best_vepoch, run_name
