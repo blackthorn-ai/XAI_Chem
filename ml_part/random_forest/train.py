@@ -138,19 +138,30 @@ class RFTrain:
 
         model.fit(cv1_x, cv1_y)
         cv2_y_pred = model.predict(cv2_x)
-        cv1_metrics = RFTrain.calculate_metrics(cv2_y, cv2_y_pred)
+        cv2_y_pred_train = model.predict(cv1_x)
+        cv1_oos_metrics = RFTrain.calculate_metrics(cv2_y, cv2_y_pred)
+        cv1_train_metrics = RFTrain.calculate_metrics(cv1_y, cv2_y_pred_train)
 
         model.fit(cv2_x, cv2_y)
         cv1_y_pred = model.predict(cv1_x)
-        cv2_metrics = RFTrain.calculate_metrics(cv1_y, cv1_y_pred)
+        cv1_y_pred_train = model.predict(cv2_x)
+        cv2_oos_metrics = RFTrain.calculate_metrics(cv1_y, cv1_y_pred)
+        cv2_train_metrics = RFTrain.calculate_metrics(cv2_y, cv1_y_pred_train)
 
-        cv_mse = (cv1_metrics['mse'] + cv2_metrics['mse']) / 2.
-        cv_mae = (cv1_metrics['mae'] + cv2_metrics['mae']) / 2.
-        cv_r2 = (cv1_metrics['r^2'] + cv2_metrics['r^2']) / 2.
+        cv_oos_mse = (cv1_oos_metrics['mse'] + cv2_oos_metrics['mse']) / 2.
+        cv_oos_mae = (cv1_oos_metrics['mae'] + cv2_oos_metrics['mae']) / 2.
+        cv_oos_r2 = (cv1_oos_metrics['r^2'] + cv2_oos_metrics['r^2']) / 2.
 
-        cv_metrics = {"mse": cv_mse,
-                      "mae": cv_mae,
-                      "r^2": cv_r2,}
+        cv_train_mse = (cv1_train_metrics['mse'] + cv2_train_metrics['mse']) / 2.
+        cv_train_mae = (cv1_train_metrics['mae'] + cv2_train_metrics['mae']) / 2.
+        cv_train_r2 = (cv1_train_metrics['r^2'] + cv2_train_metrics['r^2']) / 2.
+
+        cv_metrics = {"mse_oos": cv_oos_mse,
+                      "mae_oos": cv_oos_mae,
+                      "r^2_oos": cv_oos_r2,
+                      "mse_train": cv_train_mse,
+                      "mae_train": cv_train_mae,
+                      "r^2_train": cv_train_r2,}
         
         return cv_metrics
 
