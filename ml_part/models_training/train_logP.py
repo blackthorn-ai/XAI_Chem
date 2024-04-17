@@ -118,7 +118,7 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
             loss.backward()
 
             optimizer.step()
-            scheduler.step(loss)
+            
 
             train_pred = torch.cat((train_pred, logP_pred), dim=0)
             train_true = torch.cat((train_true, labels))
@@ -142,6 +142,8 @@ def train(model, _train_set, _test_set, num_epochs=200, use_wandb=True, save_bes
                 val_true = torch.cat((val_true, labels))
                 
                 running_vloss += vloss.item()
+
+        scheduler.step(avg_vloss)
         avg_vloss = running_vloss / (i + 1)
 
         true_val_values = val_true.view(-1).tolist()
@@ -199,8 +201,8 @@ if __name__ == '__main__':
 
     acidic_model = load_pKa_basic_model(args)
 
-    train_set = pd.read_csv(r'data\RD_dataset\train_logP_data.csv')
-    test_set = pd.read_csv(r'data\RD_dataset\test_logP_data.csv')
+    train_set = pd.read_csv(r'data\logP_lipophilicity_data\gnn_cv\train.csv')
+    test_set = pd.read_csv(r'data\logP_lipophilicity_data\gnn_cv\test.csv')
 
     train_set = load_dataset(args,train_set,"test")
     test_set = load_dataset(args,test_set,"test")
