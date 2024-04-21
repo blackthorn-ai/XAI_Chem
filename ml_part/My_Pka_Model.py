@@ -320,15 +320,19 @@ class Pka_acidic_view(nn.Module):
             nn.Linear(graph_feat_size, output_size)
         )
 
-    def freeze_except_predict(self):
-        self.gnn_layers.eval()
-        self.predict.train(True)
-
-        pass
-
-        # self.eval()
-        # for param in self.predict.parameters():
-        #     param.requires_grad = True
+    def train_mode(self, train_type: str):
+        if train_type == 'all_layers':
+            self.init_context.train()
+            self.gnn_layers.train()
+            self.predict.train()
+        elif train_type == 'predictor_and_readout':
+            self.init_context.eval()
+            self.gnn_layers.train()
+            self.predict.train()
+        elif train_type == 'all_layers' or train_type is None:
+            self.init_context.eval()
+            self.gnn_layers.eval()
+            self.predict.train()
 
     def forward(self, g, node_feats, edge_feats, get_node_weight=False):
 
@@ -450,9 +454,19 @@ class Pka_basic_view(nn.Module):
             nn.Linear(graph_feat_size, output_size)
         )
 
-    def freeze_except_predict(self):
-        self.gnn_layers.eval()
-        self.predict.train(True)
+    def train_mode(self, train_type: str):
+        if train_type == 'all_layers':
+            self.init_context.train()
+            self.gnn_layers.train()
+            self.predict.train()
+        elif train_type == 'predictor_and_readout':
+            self.init_context.eval()
+            self.gnn_layers.train()
+            self.predict.train()
+        elif train_type == 'all_layers' or train_type is None:
+            self.init_context.eval()
+            self.gnn_layers.eval()
+            self.predict.train()
         
     def forward(self, g, node_feats, edge_feats, get_node_weight=False):
 
