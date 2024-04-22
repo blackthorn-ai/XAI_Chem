@@ -15,6 +15,7 @@ class RFTrain:
             self.smiles_to_index = pickle.load(handle)
 
         np.random.seed(42)
+        # np.random.seed(3407)
 
         self.type = "pKa" if is_pKa else "logP"
         self.smiles_column_name = "smiles"
