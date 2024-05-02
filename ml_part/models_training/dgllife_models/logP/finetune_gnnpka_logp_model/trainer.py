@@ -36,7 +36,7 @@ class Trainer:
     def __init__(self) -> None:
         self.space = {
             # 'lr': hp.loguniform('lr', -10, -3),
-            'train_type': hp.choice('train_type', ['only_predictor', 'predictor_and_readout', 'all_layers'])
+            'train_type': hp.choice('train_type', ['only_predictor', 'predictor_and_readout'])
         }
 
         train_csv = r'data\logP_lipophilicity_data\gnn_cv\train.csv'
@@ -45,7 +45,7 @@ class Trainer:
         self.train_df = pd.read_csv(train_csv, index_col=0)
         self.test_df = pd.read_csv(test_csv, index_col=0)
 
-        models_names = ['AttentiveFP_canonical_Lipophilicity',]
+        models_names = ['MPNN_canonical_Lipophilicity', 'MPNN_attentivefp_Lipophilicity', ]
         # models_names = ['AttentiveFP_canonical_Lipophilicity', 'GAT_canonical_Lipophilicity', ]
         for model_name in models_names:
 
@@ -129,13 +129,14 @@ class Trainer:
         best_vloss = pow(10, 3)
         best_vmetrics = None
         best_vepoch = -1
-        model_service.train_mode(train_type=train_type)
+        
         for epoch in tqdm(range(num_epochs)):
 
             running_loss = 0.0
             running_vloss = 0.0
             train_pred, train_true = torch.Tensor([]), torch.Tensor([])
             val_pred, val_true = torch.Tensor([]), torch.Tensor([])
+            model_service.train_mode(train_type=train_type)
             for i, batch_data in enumerate(train_loader):
                 _, bg, labels, masks = batch_data
                 

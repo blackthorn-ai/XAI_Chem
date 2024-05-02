@@ -36,7 +36,8 @@ def load_pKa_acidic_model(args):
                                  num_layers= 6,
                                  graph_feat_size=200,
                                  dropout=0).to(args['device'])
-    pka1_model.load_state_dict(torch.load(r'ml_part\weights\pKa\site_acidic.pkl',map_location='cpu'))
+    # pka1_model.load_state_dict(torch.load(r'ml_part\weights\pKa\site_acidic.pkl',map_location='cpu'))
+    pka1_model.load_state_dict(torch.load(r'ml_part\weights\pKa\acid_best_loss_blooming-deluge-52.pkl',map_location='cpu'))
     return pka1_model
 
 
@@ -47,7 +48,7 @@ def load_pKa_basic_model(args):
                                  num_layers= 6,
                                  graph_feat_size=200,
                                  dropout=0).to(args['device'])
-    pka2_model.load_state_dict(torch.load(r'ml_part\weights\pKa\site_basic.pkl',map_location='cpu'))
+    pka2_model.load_state_dict(torch.load(r'ml_part\weights\pKa\basic_best_loss_glamorous-totem-39.pkl',map_location='cpu'))
     return pka2_model
 
 

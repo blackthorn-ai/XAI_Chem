@@ -1,0 +1,58 @@
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
+import numpy as np
+import torch
+import pandas as pd
+
+def prepare_data():
+    df_main = pd.read_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\init_data\pKa_Prediction_Starting data_2024.01.25.csv', index_col=0)
+
+    SMILES_to_fgroup = {}
+    SMILES_to_identificator = {}
+    for index, row in df_main.iterrows():
+        SMILES = row['Amides for LogP']
+        if pd.isnull(SMILES):
+            continue
+        
+        SMILES_to_fgroup[SMILES] = row['F group']
+        SMILES_to_identificator[SMILES] = row['identificator']
+    
+    return SMILES_to_fgroup, SMILES_to_identificator
+
+def get_color(value, cmap_type='coolwarm', vmin=-1, vmax=1):
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    cmap = plt.get_cmap(cmap_type)
+    sm = ScalarMappable(cmap=cmap, norm=norm)
+    rgba_color = sm.to_rgba(value)
+    return rgba_color
+
+def subgroup_relevance(atoms_subgroup, node_relevances):
+        node_relevance = 0
+        for atom in atoms_subgroup:
+            # node_relevance += abs(node_relevances[atom])
+            node_relevance += node_relevances[atom]
+
+        return node_relevance / len(atoms_subgroup)
+
+def check_if_edge_in_one_group(groups, start_atom_idx, 
+                               end_atom_idx):
+    is_in_one_group = False
+    group_with_edge_index = None
+    
+    for group_index in range(len(groups)):
+         if start_atom_idx in groups[group_index] and end_atom_idx in groups[group_index]:
+              is_in_one_group = True
+              group_with_edge_index = group_index
+
+    return is_in_one_group, group_with_edge_index
+
+def normalize_to_minus_one_to_one(data: dict):
+    min_val = min(data.values())
+    max_val = max(data.values())
+    difference = max_val - min_val
+
+    for key, value in data.items():
+        data[key] = ((value - min_val) / difference) * 2 - 1
+    
+    return data 

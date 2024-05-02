@@ -10,10 +10,13 @@ env/
 *.pyc
 
 *.svg
+*.png
 
 *temp*
 
 *.pyc*
+
+*_pre_trained.pth
 
 # large model names:
 *StackedEnsemble_BestOfFamily_4_AutoML_1_20240201_192353
