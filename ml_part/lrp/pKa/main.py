@@ -15,17 +15,20 @@ if __name__ == '__main__':
     molecules_fluorine_derivatives_relevance = {}
     molecules_only_fluor_derivatives = {}
     molecules_atom_in_cycle_and_edge_to_fluor_relevance = {}
+    molecules_two_atoms_from_derivatives_and_edge_to_fluor = {}
 
     for index, row in df.iterrows():
         SMILES = row['Smiles']
+        SMILES = 'NCC(F)(F)F'
         identificator = SMILES_to_identificator[SMILES]
         fluorine_group = SMILES_to_fgroup[SMILES]
+        cycle_type = SMILES_to_cycle_type[SMILES]
 
         # for debugging
         # if "[H]C(F)(F)C1CCNCC1" != SMILES:
         #     continue
 
-        if "secon" not in identificator.lower():
+        if "secon" not in identificator.lower() and cycle_type != "methane":
             continue
 
         if "secon" in identificator.lower():
@@ -42,15 +45,17 @@ if __name__ == '__main__':
             is_centrize_relevances=True
         )
 
-        output_svg_path = rf'data\lrp_results\pka\all_dataset\scaled\pKa_{SMILES}.svg'
-        output_png_path = rf'data\lrp_results\pka\all_dataset\scaled\pKa_{SMILES}.png'
+        output_svg_path = rf'data\lrp_results\pka\all_dataset_with_primary_not_cycle\scaled\pKa_{SMILES}.svg'
+        output_png_path = rf'data\lrp_results\pka\all_dataset_with_primary_not_cycle\scaled\pKa_{SMILES}.png'
         logp_lrp.save_molecule_with_relevances(output_svg_path=output_svg_path,
                                                output_png_path=output_png_path)
         
         molecules_fluorine_derivatives_relevance[SMILES] = logp_lrp.relevance_entire_derivatives
         molecules_only_fluor_derivatives[SMILES] = logp_lrp.relevance_only_fluorine
         molecules_atom_in_cycle_and_edge_to_fluor_relevance[SMILES] = logp_lrp.relevance_fluorine_derivative_atom_in_cycle_and_edge_to_fluor
+        molecules_two_atoms_from_derivatives_and_edge_to_fluor[SMILES] = logp_lrp.relevance_two_atoms_from_fluor_derivatives_and_edge
         # print(logp_lrp.node_relevances)
+        break
 
     print("Entire fluorine derivatives")
     print(molecules_fluorine_derivatives_relevance)
@@ -60,3 +65,6 @@ if __name__ == '__main__':
     print("=" * 20)
     print("Atom and edge to fluorine")
     print(molecules_atom_in_cycle_and_edge_to_fluor_relevance)
+    print("=" * 20)
+    print("Two Atoms and edge to fluorine")
+    print(molecules_two_atoms_from_derivatives_and_edge_to_fluor)

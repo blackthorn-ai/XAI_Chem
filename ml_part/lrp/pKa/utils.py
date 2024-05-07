@@ -1,9 +1,16 @@
+from collections import deque
+
+import numpy as np
+import pandas as pd
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
-import numpy as np
+
 import torch
-import pandas as pd
+
+from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def prepare_data():
     df_main = pd.read_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\init_data\pKa_Prediction_Starting data_2024.01.25.csv', index_col=0)
@@ -59,3 +66,29 @@ def normalize_to_minus_one_to_one(data: dict, min_val: float = None,
         data[key] = ((value - min_val) / difference) * 2 - 1
     
     return data 
+
+def find_the_furthest_atom(mol: rdchem.Mol, 
+                           atom_id: int, 
+                           atoms_not_to_visit: list = []):
+    queue = deque([(atom_id, 0)])
+
+    visited = set()
+    
+    while queue:
+        current_atom, distance = queue.popleft()
+        
+        visited.add(current_atom)
+        
+        neighbors = []
+        for atom in mol.GetAtomWithIdx(current_atom).GetNeighbors():
+            if atom.GetSymbol().lower() == 'h':
+                continue
+            if atom.GetIdx() in atoms_not_to_visit:
+                continue
+            neighbors.append(atom.GetIdx())
+        
+        for neighbor in neighbors:
+            if neighbor not in visited:
+                queue.append((neighbor, distance + 1))
+    
+    return current_atom, distance

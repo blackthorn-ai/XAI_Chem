@@ -12,7 +12,7 @@ from dgllife.utils.mol_to_graph import SMILESToBigraph
 from dgllife.utils import AttentiveFPAtomFeaturizer, AttentiveFPBondFeaturizer
 
 from logP_model_service import LogPModelService
-from utils import get_color, subgroup_relevance, check_if_edge_in_one_group, normalize_to_minus_one_to_one
+from utils import get_color, subgroup_relevance, check_if_edge_in_one_group, normalize_to_minus_one_to_one, find_the_furthest_atom
 from constants import functional_group_to_smiles
 
 class LogpLRP:
@@ -57,6 +57,11 @@ class LogpLRP:
         self.relevance_only_fluorine = LogpLRP.calculate_derivative_relevance_in_molecule(
             mol=self.mol, node_relevances=self.node_relevances,
             derivatives_atoms=self.derivatives_atoms, only_fluorine=True
+        )
+
+        self.relevance_fluorine_derivative_atom_in_cycle_and_edge_to_fluor = LogpLRP.calculate_relevance_for_one_atom_and_edge_in_molecule(
+            mol=self.mol, fluorine_group=self.fluorine_group, 
+            node_relevances=self.node_relevances
         )
 
     @staticmethod
@@ -187,6 +192,38 @@ class LogpLRP:
                 
         return round(relevance_for_subgroup, 2)
 
+    @staticmethod
+    def get_atom_id_by_symbol(mol, atom_symbol):
+        for atom in mol.GetAtoms():
+            if atom.GetSymbol().lower() == atom_symbol.lower():
+                return atom.GetIdx() 
+
+    @staticmethod
+    def calculate_relevance_for_one_atom_and_edge_in_molecule(mol, fluorine_group,
+                                                              node_relevances):
+        relevance = 0
+        
+        if "non" in fluorine_group:
+            # add relevance for molecules without fluorine
+            nitrogen_atom_id = LogpLRP.get_atom_id_by_symbol(mol=mol, atom_symbol='N')
+            # find the furthest atom from nitrogen
+            atom_id, distance = find_the_furthest_atom(mol=mol,
+                                                       atom_id=nitrogen_atom_id)
+
+            return node_relevances[atom_id]
+        
+        fluorine_group_smiles = functional_group_to_smiles[fluorine_group]
+        if "non" not in fluorine_group:
+            fluorine_group_smiles = "C" + fluorine_group_smiles
+        
+        fluorine_group_mol = Chem.MolFromSmiles(fluorine_group_smiles)
+        f_group_matches = mol.GetSubstructMatches(fluorine_group_mol)
+
+        node_relevance = node_relevances[f_group_matches[0][0]]
+
+        relevance = node_relevance
+        return round(relevance / 2, 2)
+
     def extract_atoms_colors_from_relevances(self, mol, atoms_groups):
         atoms_colors = {}
         atoms = []
@@ -196,12 +233,12 @@ class LogpLRP:
         # min_node_relevance = min(self.node_relevances.values())
         max_node_relevance = 1
         min_node_relevance = -1
-        # for atom_index, node_relevance in self.node_relevances.items():
-        #     mol.GetAtoms()[atom_index].SetProp("atomNote", str(round(self.node_relevances[atom_index], 2)))
+        for atom_index, node_relevance in self.node_relevances.items():
+            mol.GetAtoms()[atom_index].SetProp("atomNote", str(round(self.node_relevances[atom_index], 2)))
                 
-        #     color_by_relevance = get_color(node_relevance, vmin=min_node_relevance, vmax=max_node_relevance)
-        #     atoms_colors[atom_index] = color_by_relevance
-        #     atoms.append(atom_index)
+            color_by_relevance = get_color(node_relevance, vmin=min_node_relevance, vmax=max_node_relevance)
+            atoms_colors[atom_index] = color_by_relevance
+            atoms.append(atom_index)
 
         group_to_relevance = {}
         for group_index in range(len(atoms_groups)):
@@ -211,20 +248,20 @@ class LogpLRP:
         # min_node_relevance = min(group_to_relevance.values()) * 2
         # max_node_relevance = max(group_to_relevance.values()) * 2
 
-        atoms = []
-        for group_index in range(len(atoms_groups)):
-            group = atoms_groups[group_index]
-            group_relevance = group_to_relevance[group_index]
+        # atoms = []
+        # for group_index in range(len(atoms_groups)):
+        #     group = atoms_groups[group_index]
+        #     group_relevance = group_to_relevance[group_index]
             
-            is_group_subscribed = False
-            for atom_index in group:
-                if not is_group_subscribed:
-                    mol.GetAtoms()[atom_index].SetProp("atomNote", str(round(group_relevance, 2)))
-                    is_group_subscribed = True
+        #     is_group_subscribed = False
+        #     for atom_index in group:
+        #         if not is_group_subscribed:
+        #             mol.GetAtoms()[atom_index].SetProp("atomNote", str(round(group_relevance, 2)))
+        #             is_group_subscribed = True
 
-                color_by_relevance = get_color(group_relevance, vmin=min_node_relevance, vmax=max_node_relevance)
-                atoms_colors[atom_index] = color_by_relevance
-                atoms.append(atom_index)
+        #         color_by_relevance = get_color(group_relevance, vmin=min_node_relevance, vmax=max_node_relevance)
+        #         atoms_colors[atom_index] = color_by_relevance
+        #         atoms.append(atom_index)
 
         # edge relevance
         for edge_idx in range(mol.GetNumBonds()):

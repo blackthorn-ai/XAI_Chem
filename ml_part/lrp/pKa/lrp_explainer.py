@@ -12,7 +12,7 @@ from dgllife.utils.mol_to_graph import SMILESToBigraph
 from dgllife.utils import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
 
 from pKa_model_service import PkaModelService
-from utils import get_color, subgroup_relevance, check_if_edge_in_one_group, normalize_to_minus_one_to_one
+from utils import get_color, subgroup_relevance, check_if_edge_in_one_group, normalize_to_minus_one_to_one, find_the_furthest_atom
 from constants import functional_group_to_smiles
 from constants import Identificator, RelevanceMode
 
@@ -64,6 +64,11 @@ class PkaLRP:
         )
 
         self.relevance_fluorine_derivative_atom_in_cycle_and_edge_to_fluor = PkaLRP.calculate_relevance_for_one_atom_and_edge_in_molecule(
+            mol=self.mol, fluorine_group=self.fluorine_group, 
+            node_relevances=self.node_relevances, edge_relevances=self.edge_relevances
+        )
+
+        self.relevance_two_atoms_from_fluor_derivatives_and_edge = PkaLRP.calculate_relevance_for_two_atom_and_edge_from_derivatives(
             mol=self.mol, fluorine_group=self.fluorine_group, 
             node_relevances=self.node_relevances, edge_relevances=self.edge_relevances
         )
@@ -219,6 +224,12 @@ class PkaLRP:
         return round(relevance_for_subgroup, 2)
 
     @staticmethod
+    def get_atom_id_by_symbol(mol, atom_symbol):
+        for atom in mol.GetAtoms():
+            if atom.GetSymbol().lower() == atom_symbol.lower():
+                return atom.GetIdx() 
+    
+    @staticmethod
     def calculate_relevance_for_one_atom_and_edge_in_molecule(mol, fluorine_group,
                                                               node_relevances,
                                                               edge_relevances):
@@ -226,7 +237,12 @@ class PkaLRP:
         
         if "non" in fluorine_group:
             # add relevance for molecules without fluorine
-            return relevance
+            nitrogen_atom_id = PkaLRP.get_atom_id_by_symbol(mol=mol, atom_symbol='N')
+            # find the furthest atom from nitrogen
+            atom_id, distance = find_the_furthest_atom(mol=mol,
+                                                       atom_id=nitrogen_atom_id)
+
+            return node_relevances[atom_id]
         
         fluorine_group_smiles = functional_group_to_smiles[fluorine_group]
         if "non" not in fluorine_group:
@@ -251,8 +267,43 @@ class PkaLRP:
         # print(node_relevance)
         # print(edge_relevance)
         relevance = node_relevance + edge_relevance / len(f_group_matches)
-        return round(relevance, 2)
+        return round(relevance / 2, 2)
 
+
+    @staticmethod
+    def calculate_relevance_for_two_atom_and_edge_from_derivatives(mol, fluorine_group,
+                                                                   node_relevances,
+                                                                   edge_relevances):
+        relevance = 0
+        
+        if "non" in fluorine_group:
+            # add relevance for molecules without fluorine
+            return 1
+        
+        fluorine_group_smiles = functional_group_to_smiles[fluorine_group]
+        if "non" not in fluorine_group:
+            fluorine_group_smiles = "C" + fluorine_group_smiles
+        
+        fluorine_group_mol = Chem.MolFromSmiles(fluorine_group_smiles)
+        f_group_matches = mol.GetSubstructMatches(fluorine_group_mol)
+
+        node_relevance = node_relevances[f_group_matches[0][0]] + node_relevances[f_group_matches[0][1]]
+        edge_relevance = 0
+        for f_group_match in f_group_matches:
+            atom_from = f_group_match[0]
+            atom_to = f_group_match[1]
+
+            for mol_edge_idx in range(mol.GetNumBonds()):
+                mol_begin_node = mol.GetBonds()[mol_edge_idx].GetBeginAtomIdx()
+                mol_end_node = mol.GetBonds()[mol_edge_idx].GetEndAtomIdx()
+
+                if (mol_begin_node == atom_from and mol_end_node == atom_to) or mol_begin_node == atom_to and mol_end_node == atom_from:
+                    edge_relevance += edge_relevances[mol_edge_idx]
+
+        # print(node_relevance)
+        # print(edge_relevance)
+        relevance = node_relevance + edge_relevance / len(f_group_matches)
+        return round(relevance / 3., 2)
         
 
     def convert_bigraph_edges_relevance_to_mol_bonds(self, mol):
