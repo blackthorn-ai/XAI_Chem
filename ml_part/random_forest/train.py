@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 class RFTrain:
-    def __init__(self, smiles_filepath, X, y, is_pKa=True, k_folds=None):
+    def __init__(self, smiles_filepath, X, y, smiles_column_name='smiles', is_pKa=True, k_folds=None):
         with open(smiles_filepath, 'rb') as handle:
             self.smiles_to_index = pickle.load(handle)
 
@@ -18,16 +18,24 @@ class RFTrain:
         # np.random.seed(3407)
 
         self.type = "pKa" if is_pKa else "logP"
-        self.smiles_column_name = "smiles"
+        
+        self.smiles_column_name = smiles_column_name
+        if self.smiles_column_name is None:
+            self.smiles_column_name = "Smiles"
+
         self.X = X
         self.y = y
 
-        self.train_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_logP_data.csv', 
-                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_pKa_acid_data.csv', 
-                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_pKa_amine_data.csv']
-        self.test_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_logP_data.csv', 
-                               r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_acid_data.csv', 
-                               r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_amine_data.csv']
+        # self.train_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_logP_data.csv', 
+        #                         r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_pKa_acid_data.csv', 
+        #                         r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_pKa_amine_data.csv']
+        # self.test_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_logP_data.csv', 
+        #                        r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_acid_data.csv', 
+        #                        r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_pKa_amine_data.csv']
+        self.train_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\train_logP_data.csv',
+                                 r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\train_test\canon_smiles_train_test\train_pKa.csv']
+        self.test_data_paths = [r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\FGroupData\test_logP_data.csv',
+                                r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\train_test\canon_smiles_train_test\test_pKa.csv']
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_train_test(k_folds=k_folds)
         self.X_train.fillna(0, inplace=True)
@@ -192,7 +200,7 @@ class RFTrain:
 
         objective_partial = partial(RFTrain.objective, X_train=self.X_train, y_train=self.y_train)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=1000, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=500, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams

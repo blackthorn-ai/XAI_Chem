@@ -262,8 +262,8 @@ def detect_and_remove_outliers(features_df, target_df):
 smiles_type = 'Smiles'
 
 if __name__ == '__main__':
-    csv_file_path = r'data\init_data\pKa_Prediction_Starting data_2024.01.25.csv'
-    csv_features_file_to_save = r'data\updated_features\remained_features_pKa_08.02_v4_fixed_distances_chirality.csv'
+    csv_file_path = r'data\init_data\pKa_Prediction_Starting data_2024.05.07.csv'
+    csv_features_file_to_save = r'data\updated_features\remained_features_pKa_07.05_v5_canonical_smiles.csv'
     df = pd.read_csv(csv_file_path)
 
     smiles_to_features_index = {}

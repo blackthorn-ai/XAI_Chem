@@ -29,13 +29,14 @@ class DataPreparation:
         self.targets = ['pKa', 'logP']
 
     def prepare_data_for_RF(self, 
-                            is_pKa:bool=True, 
-                            subgroup_type:str=None,
-                            molecule_type:str=None,
-                            use_mandatory_features:bool=True, 
-                            is_remove_outliers:bool=True,
-                            outliers_features_to_skip:list()=None,
-                            is_remove_nan:bool=True):
+                            is_pKa: bool = True, 
+                            subgroup_type: str = None,
+                            molecule_type: str = None,
+                            use_mandatory_features: bool = True, 
+                            is_remove_outliers: bool = True,
+                            outliers_features_to_skip: list = None,
+                            is_remove_nan: bool = True,
+                            is_convert_angles_to_category: bool = False):
         
         if subgroup_type is not None and self.smiles_to_subgroup is None:
             raise ValueError("DataPreparation needs pickle file, smiles_to_subgroup is None")
@@ -64,13 +65,81 @@ class DataPreparation:
         if is_remove_nan: X_y = X_y.dropna()
         print(f"Remains rows:{len(X_y)}, amount of features: {len(X_y.keys())}")
 
+        if is_convert_angles_to_category:
+            X_y = DataPreparation.prepare_angles_features(X=X_y)
+
         y = X_y['logP']
         if is_pKa == True:
             y = X_y['pKa']
 
         X = X_y.copy().drop(self.targets, axis=1)
 
+        
+
         return X, y
+
+
+    @staticmethod
+    def prepare_angles_features(X):
+        for feature_name in X.columns:
+            
+            if "angle" not in feature_name and "distance" not in feature_name:
+                continue
+            
+            X['no angle and distance'] = [0] * len(X)
+            X.loc[X[pd.isnull(X[feature_name])].index, 'no angle and distance'] = 1
+
+            q_amount = 4
+            X['bin'] = pd.qcut(X[feature_name], q=q_amount, labels=False)
+
+            for bin_index in range(q_amount):
+                df_temp = X[X['bin'] == bin_index].copy()
+                
+                round_value = None
+                if "distance" in feature_name:
+                    round_value = 1
+
+                # min_bin_value = round(min(df_temp[feature_name].tolist()), round_value)
+                # max_bin_value = round(max(df_temp[feature_name].tolist()), round_value)
+                # bin_name = f"{feature_name} {min_bin_value}-{max_bin_value}"
+
+                X.loc[df_temp.index, feature_name] = int(bin_index + 1)
+            
+            X.drop(['bin'], axis=1, inplace=True)
+        
+        return X
+
+
+    @staticmethod
+    def prepare_angles_features_one_hot(X):
+        for feature_name in X.columns:
+            
+            if "angle" not in feature_name and "distance" not in feature_name:
+                continue
+            
+            X['no angle and distance'] = [0] * len(X)
+            X.loc[X[pd.isnull(X[feature_name])].index, 'no angle and distance'] = 1
+
+            q_amount = 4
+            X['bin'] = pd.qcut(X[feature_name], q=q_amount, labels=False)
+
+            for bin_index in range(q_amount):
+                df_temp = X[X['bin'] == bin_index].copy()
+                
+                round_value = None
+                if "distance" in feature_name:
+                    round_value = 1
+
+                min_bin_value = round(min(df_temp[feature_name].tolist()), round_value)
+                max_bin_value = round(max(df_temp[feature_name].tolist()), round_value)
+                bin_name = f"{feature_name} {min_bin_value}-{max_bin_value}"
+
+                X[bin_name] = [0] * len(X)
+                X.loc[df_temp.index, bin_name] = 1
+            
+            X.drop([feature_name, 'bin'], axis=1, inplace=True)
+        
+        return X
 
 
     @staticmethod
