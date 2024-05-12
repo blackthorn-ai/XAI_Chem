@@ -3,6 +3,6 @@ functional_group_to_smiles = {
     "CH2F": "CF", 
     "gem-CF2": "F", 
     "CHF2": "C(F)(F)",
-    "CHF": "F",
+    "CHF": "CF",
     "non-F": ""
 }

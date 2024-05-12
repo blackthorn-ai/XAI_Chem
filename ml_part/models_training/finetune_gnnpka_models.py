@@ -72,16 +72,16 @@ class Trainer:
 
         exp_config = get_configure(self.args['model'],"test")
 
-        self.train_set = pd.read_csv(r'data\pKa_basicity_data\gnn_cv\train_acid.csv')
-        self.test_set = pd.read_csv(r'data\pKa_basicity_data\gnn_cv\test_acid.csv')
+        self.train_set = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\train_basic.csv')
+        self.test_set = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\test_basic.csv')
 
         best_hyperparameters = self.find_best_params_with_hyperopt()
 
         print(crossvals_list)
         cv_file = pd.DataFrame(crossvals_list)
-        cv_file.to_csv(r'ml_part\models_training\saved_cv_csv\pKa_acid_cv.csv')
+        cv_file.to_csv(r'ml_part\models_training\saved_cv_csv\pKa_amine_cv_canon_smiles.csv')
 
-        acidic_model = Trainer.load_pKa_acidic_model(self.args)
+        acidic_model = Trainer.load_pKa_basic_model(self.args)
 
         train_set = load_dataset(self.args, self.train_set, "test")
         test_set = load_dataset(self.args, self.test_set, "test")
@@ -119,7 +119,7 @@ class Trainer:
                 "train_mode": train_mode,
                 "batch_size": batch_size,
                 "architecture": model_name,
-                "dataset": "data\pKa_basicity_data",
+                "dataset": "data\pKa_basicity_data_canon_smiles",
                 "epochs": epochs,
                 "optimizer": f"Adam(lr={lr}, weight_decay={weight_decay})",
                 "loss": "MSELoss",
@@ -135,7 +135,7 @@ class Trainer:
 
         objective_partial = partial(Trainer.optimization_function, X_train=self.train_set)
 
-        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=5, verbose=1)
+        best_hyperparams = fmin(fn=objective_partial, space=self.space, algo=algo, max_evals=6, verbose=1)
 
         print("Найкращі гіперпараметри:", best_hyperparams)
         return best_hyperparams
@@ -176,15 +176,16 @@ class Trainer:
             train_set = load_dataset(args,train_df_cv,"test")
             test_set = load_dataset(args,test_df_cv,"test")
 
-            loss_cv, metrics_cv, metrics_cv_train, best_val_pred_values, best_train_pred_values, true_val_values, true_train_values = Trainer.train(args=args,
-                                                                  model=acidic_model,  
-                                                                  _train_set=train_set, 
-                                                                  _test_set=test_set,
-                                                                  save_best_model=False,
-                                                                  lr=params['lr'],
-                                                                  weight_decay=params['weight_decay'],
-                                                                  train_type=params['train_type']
-                                                                  )
+            loss_cv, metrics_cv, metrics_cv_train, best_val_pred_values, best_train_pred_values, true_val_values, true_train_values = Trainer.train(
+                args=args,
+                model=acidic_model,  
+                _train_set=train_set, 
+                _test_set=test_set,
+                save_best_model=False,
+                lr=params['lr'],
+                weight_decay=params['weight_decay'],
+                train_type=params['train_type']
+            )
 
             cv_dict[f"cv_{cross_val_index}_loss"] = loss_cv
             cv_dict[f"cv_{cross_val_index}_r^2"] = metrics_cv["r_score"]
@@ -303,7 +304,7 @@ class Trainer:
             lr = optimizer.param_groups[0]['lr']
             if avg_vloss < best_vloss:
                 if save_best_model is True:
-                    torch.save(model.state_dict(), rf'ml_part\weights\pKa\acid_best_loss_{run_name}.pkl')
+                    torch.save(model.state_dict(), rf'ml_part\weights\pKa\amine_best_loss_{run_name}.pkl')
                 best_train_metrics = train_metrics
                 best_val_metrics = val_metrics
                 best_val_pred_values = pred_val_values.copy()

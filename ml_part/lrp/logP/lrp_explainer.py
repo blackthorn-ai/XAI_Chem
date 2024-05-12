@@ -10,6 +10,7 @@ from torch.autograd import Variable
 
 from dgllife.utils.mol_to_graph import SMILESToBigraph
 from dgllife.utils import AttentiveFPAtomFeaturizer, AttentiveFPBondFeaturizer
+from dgllife.utils import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
 
 from logP_model_service import LogPModelService
 from utils import get_color, subgroup_relevance, check_if_edge_in_one_group, normalize_to_minus_one_to_one, find_the_furthest_atom
@@ -31,6 +32,7 @@ class LogpLRP:
         if model_service is None:
             model_name = 'GCN_attentivefp_lipophilicity'
             model_weights = r'ml_part\weights\logP_dgllife_lipophilicity\best_models\GNN_attentivefp_model_logP_best_loss.pth'
+            # model_weights = r'ml_part\weights\logP_dgllife_lipophilicity\with_explicit_hydrogen\GCN_attentivefp_Lipophilicity_logP_best_loss.pth'
             
             model_service = LogPModelService(
                 model_name=model_name,
@@ -64,6 +66,11 @@ class LogpLRP:
             node_relevances=self.node_relevances
         )
 
+        self.relevance_fluorine_group = LogpLRP.calculate_relevance_for_all_atoms_in_f_group_in_molecule(
+            mol=self.mol, fluorine_group=self.fluorine_group, 
+            node_relevances=self.node_relevances
+        )
+
     @staticmethod
     def prepare_logP_graph(SMILES):
         """
@@ -77,8 +84,9 @@ class LogpLRP:
         """
         smiles_to_graph = SMILESToBigraph(add_self_loop=True,
                                           node_featurizer=AttentiveFPAtomFeaturizer(),
-                                          edge_featurizer=AttentiveFPBondFeaturizer(self_loop=True))
-
+                                          edge_featurizer=AttentiveFPBondFeaturizer(self_loop=True),
+                                          explicit_hydrogens=False)
+    
         return smiles_to_graph(SMILES)
 
     def lrp(self, bg, node_feats):
@@ -168,6 +176,7 @@ class LogpLRP:
     @staticmethod
     def create_mol_as_bigraph(smiles):
         mol = Chem.MolFromSmiles(smiles)
+        # mol = Chem.AddHs(mol)
 
         new_order = rdmolfiles.CanonicalRankAtoms(mol)
         mol = rdmolops.RenumberAtoms(mol, new_order)
@@ -223,6 +232,35 @@ class LogpLRP:
 
         relevance = node_relevance
         return round(relevance / 2, 2)
+    
+    @staticmethod
+    def calculate_relevance_for_all_atoms_in_f_group_in_molecule(mol, fluorine_group,
+                                                                 node_relevances):
+        relevance = 0
+        
+        if "non" in fluorine_group:
+            return relevance
+        
+        fluorine_group_smiles = "C" + functional_group_to_smiles[fluorine_group]
+        
+        fluorine_group_mol = Chem.MolFromSmiles(fluorine_group_smiles)
+        f_group_matches = mol.GetSubstructMatches(fluorine_group_mol)
+
+        all_unique_atoms = set()
+        for f_group_match in f_group_matches:
+            for atom_index in f_group_match:
+                all_unique_atoms.add(atom_index)
+
+        amount_of_relevant_atoms = len(all_unique_atoms)
+        for f_group_atom in all_unique_atoms:
+            relevance += node_relevances[f_group_atom]
+            for atom in mol.GetAtomWithIdx(f_group_atom).GetNeighbors():
+                if atom.GetSymbol().lower() == 'h':
+                    relevance += node_relevances[atom.GetIdx()]
+                    amount_of_relevant_atoms += 1
+
+        return round(relevance / len(f_group_matches), 3)
+        # return round(relevance, 2)
 
     def extract_atoms_colors_from_relevances(self, mol, atoms_groups):
         atoms_colors = {}
