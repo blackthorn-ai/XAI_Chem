@@ -73,6 +73,11 @@ class PkaLRP:
             node_relevances=self.node_relevances, edge_relevances=self.edge_relevances
         )
 
+        self.relevance_fluorine_group = PkaLRP.calculate_relevance_for_all_atoms_in_f_group_in_molecule(
+            mol=self.mol, fluorine_group=self.fluorine_group, 
+            node_relevances=self.node_relevances
+        )
+
     @staticmethod
     def prepare_pKa_graph(SMILES):
         """
@@ -267,7 +272,7 @@ class PkaLRP:
         # print(node_relevance)
         # print(edge_relevance)
         relevance = node_relevance + edge_relevance / len(f_group_matches)
-        return round(relevance / 2, 2)
+        return round(relevance / 2, 4)
 
 
     @staticmethod
@@ -304,7 +309,36 @@ class PkaLRP:
         # print(edge_relevance)
         relevance = node_relevance + edge_relevance / len(f_group_matches)
         return round(relevance / 3., 2)
+
+
+    @staticmethod
+    def calculate_relevance_for_all_atoms_in_f_group_in_molecule(mol, fluorine_group,
+                                                                 node_relevances):
+        relevance = 0
         
+        if "non" in fluorine_group:
+            return relevance
+        
+        fluorine_group_smiles = "C" + functional_group_to_smiles[fluorine_group]
+        
+        fluorine_group_mol = Chem.MolFromSmiles(fluorine_group_smiles)
+        f_group_matches = mol.GetSubstructMatches(fluorine_group_mol)
+
+        all_unique_atoms = set()
+        for f_group_match in f_group_matches:
+            for atom_index in f_group_match:
+                all_unique_atoms.add(atom_index)
+
+        amount_of_relevant_atoms = len(all_unique_atoms)
+        for f_group_atom in all_unique_atoms:
+            relevance += node_relevances[f_group_atom]
+            for atom in mol.GetAtomWithIdx(f_group_atom).GetNeighbors():
+                if atom.GetSymbol().lower() == 'h':
+                    relevance += node_relevances[atom.GetIdx()]
+                    amount_of_relevant_atoms += 1
+
+        return round(relevance / len(f_group_matches), 3)
+      
 
     def convert_bigraph_edges_relevance_to_mol_bonds(self, mol):
         edge_relevances_for_mol = {}

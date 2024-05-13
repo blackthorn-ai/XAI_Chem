@@ -13,7 +13,7 @@ from rdkit import Chem
 from rdkit.Chem import rdchem
 
 def prepare_data():
-    df_main = pd.read_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\init_data\pKa_Prediction_Starting data_2024.01.25.csv', index_col=0)
+    df_main = pd.read_csv(r'data\init_data\pKa_Prediction_Starting data_2024.05.07.csv', index_col=0)
 
     SMILES_to_fgroup = {}
     SMILES_to_identificator = {}

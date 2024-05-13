@@ -8,8 +8,8 @@ from constants import Identificator
 class PkaModelService:
     def __init__(self, 
                  identificator: Identificator = Identificator.secondary_amine,
-                 amine_model_weights_path: str = r"ml_part\weights\best_weights\basic_best_loss_glamorous-totem-39.pkl",
-                 acid_model_weights_path: str = r"ml_part\weights\best_weights\acid_best_loss_blooming-deluge-52.pkl") -> None:
+                 amine_model_weights_path: str = r"ml_part\weights\best_weights\pKa_canon_smiles\amine_best_loss_morning-sky-87.pkl",
+                 acid_model_weights_path: str = r"ml_part\weights\best_weights\pKa_canon_smiles\acid_best_loss_lilac-pine-66.pkl") -> None:
         
         if "amine" in identificator.name.lower():
             self.pKa_model = PkaModelService.load_pKa_basic_model(amine_model_weights_path)
