@@ -45,8 +45,7 @@ class PkaLRP:
         if is_centrize_relevances:
             min_relevance = min(list(self.node_relevances.values()) + list(self.edge_relevances.values()))
             max_relevance = max(list(self.node_relevances.values()) + list(self.edge_relevances.values()))
-            self.node_relevances = normalize_to_minus_one_to_one(data=self.node_relevances, min_val=min_relevance, max_val=max_relevance)
-            self.edge_relevances = normalize_to_minus_one_to_one(data=self.edge_relevances, min_val=min_relevance, max_val=max_relevance)
+            self.node_relevances, self.edge_relevances = normalize_to_minus_one_to_one(data_node=self.node_relevances, data_edge=self.edge_relevances)
 
         self.mol = PkaLRP.create_mol_as_bigraph(self.SMILES)
         self.atoms_groups, self.derivatives_atoms = self.obtain_subgroups_from_mol(molecule=self.mol)

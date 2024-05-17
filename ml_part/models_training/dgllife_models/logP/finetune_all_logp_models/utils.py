@@ -11,6 +11,7 @@ import dgl
 from dgllife.model import load_pretrained
 from dgllife.data import MoleculeCSVDataset
 from dgllife.utils import smiles_to_bigraph
+from dgllife.utils import AttentiveFPAtomFeaturizer, AttentiveFPBondFeaturizer
 from dgllife.utils import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
 from dgllife.model.model_zoo.gat_predictor import GATPredictor
 

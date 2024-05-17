@@ -56,16 +56,22 @@ def check_if_edge_in_one_group(groups, start_atom_idx,
 
     return is_in_one_group, group_with_edge_index
 
-def normalize_to_minus_one_to_one(data: dict, min_val: float = None, 
+def normalize_to_minus_one_to_one(data_node: dict, data_edge: dict, min_val: float = None, 
                                   max_val: float = None):
-    if min_val is None: min_val = min(data.values())
-    if max_val is None: max_val = max(data.values())
+    if data_edge is not None:
+        if min_val is None: min_val = min(min(data_node.values()), min(data_edge.values()))
+        if max_val is None: max_val = max(max(data_node.values()), max(data_edge.values()))
+    else:
+        if min_val is None: min_val = min(data_node.values())
+        if max_val is None: max_val = max(data_node.values())
     difference = max_val - min_val
 
-    for key, value in data.items():
-        data[key] = ((value - min_val) / difference) * 2 - 1
+    for key, value in data_node.items():
+        data_node[key] = ((value - min_val) / difference) * 2 - 1
+    for key, value in data_edge.items():
+        data_edge[key] = ((value - min_val) / difference) * 2 - 1
     
-    return data 
+    return data_node, data_edge 
 
 def find_the_furthest_atom(mol: rdchem.Mol, 
                            atom_id: int, 

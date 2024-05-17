@@ -70,6 +70,10 @@ def normalize_to_minus_one_to_one(data: dict):
 def find_the_furthest_atom(mol: rdchem.Mol, 
                            atom_id: int, 
                            atoms_not_to_visit: list = []):
+    logP_ring = 'C1=CC=CC=C1'
+    mol_ring = Chem.MolFromSmiles(logP_ring)
+    mol_ring_match = mol.GetSubstructMatches(mol_ring)[0]
+    
     queue = deque([(atom_id, 0)])
 
     visited = set()
@@ -85,7 +89,7 @@ def find_the_furthest_atom(mol: rdchem.Mol,
                 continue
             if atom.GetIdx() in atoms_not_to_visit:
                 continue
-            if atom.IsInRing():
+            if atom.GetIdx() in mol_ring_match:
                 continue
             
             neighbors.append(atom.GetIdx())
