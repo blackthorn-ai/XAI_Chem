@@ -38,9 +38,13 @@ if __name__ == "__main__":
 
     df = dataset.df
 
+    csv_logP_train_path = r'data\logP_lipophilicity_data\gnn_cv\train.csv'
     csv_logP_test_path = r'data\logP_lipophilicity_data\gnn_cv\test.csv'
 
-    df = pd.read_csv(csv_logP_test_path, index_col=0)
+    df_train = pd.read_csv(csv_logP_train_path, index_col=0)
+    df_test = pd.read_csv(csv_logP_test_path, index_col=0)
+
+    df = pd.concat([df_train, df_test], axis=0)
 
     model_name = 'GCN_attentivefp_Lipophilicity'
     lipophilicity_model = load_pretrained(model_name)

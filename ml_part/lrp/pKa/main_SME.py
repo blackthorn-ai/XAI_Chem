@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     SMILES_to_fgroup, SMILES_to_identificator, SMILES_to_cycle_type = prepare_data()
 
-    df_train = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\train_basic.csv', index_col=0)
-    df_test = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\test_basic.csv', index_col=0)
+    df_train = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\train_acid.csv', index_col=0)
+    df_test = pd.read_csv(r'data\pKa_basicity_data\gnn_cv_canon_smiles\test_acid.csv', index_col=0)
     df = pd.concat([df_train, df_test], axis=0)
 
     # df = pd.read_csv(r'data\init_data\pKa_Prediction_Starting data_2024.05.07.csv')
@@ -27,10 +27,10 @@ if __name__ == '__main__':
         fluorine_group = SMILES_to_fgroup[SMILES]
         cycle_type = SMILES_to_cycle_type[SMILES]
 
-        if "amine" not in identificator.lower():
+        if "acid" not in identificator.lower():
             continue
-        if "secon" not in identificator.lower() and cycle_type != "methane":
-            continue
+        # if "prima" not in identificator.lower() and cycle_type != "methane":
+        #     continue
 
         if "secon" in identificator.lower():
             identificator = Identificator.secondary_amine
@@ -39,16 +39,18 @@ if __name__ == '__main__':
         elif "acid" in identificator.lower():
             identificator = Identificator.carboxilic_acid
 
-        amine_model_path = r'ml_part\weights\pKa\combined_dataset\acid_best_loss_daily-morning-84.pkl'
+        # amine_model_path = r'ml_part\weights\pKa\overfit_amine_best_loss_logical-bee-26.pkl'
+        model_path = r'ml_part\weights\pKa\combined_dataset\acid_best_loss_daily-morning-84.pkl'
         if row['fold_id'] == 0:
-            amine_model_path = r'ml_part\weights\pKa\combined_dataset\cv_models\acidic\cv_1_best_loss_lr_0.0007452146740113421_wd_0.0025791056042483687_train_type_predictor_and_readout.pkl'
+            model_path = r'ml_part\weights\pKa\combined_dataset\cv_models\acidic\cv_1_best_loss_lr_0.0007452146740113421_wd_0.0025791056042483687_train_type_predictor_and_readout.pkl'
         if row['fold_id'] == 1:
-            amine_model_path = r'ml_part\weights\pKa\combined_dataset\cv_models\acidic\cv_0_best_loss_lr_0.0007452146740113421_wd_0.0025791056042483687_train_type_predictor_and_readout.pkl'
+            model_path = r'ml_part\weights\pKa\combined_dataset\cv_models\acidic\cv_0_best_loss_lr_0.0007452146740113421_wd_0.0025791056042483687_train_type_predictor_and_readout.pkl'
 
         # print(row['fold_id'], amine_model_path)
         model_service = PkaModelService(identificator=identificator,
                                         is_combined_model=False,
-                                        amine_model_weights_path=amine_model_path)
+                                        amine_model_weights_path=model_path,
+                                        acid_model_weights_path=model_path)
 
         logp_lrp = PkaLRP(
             model_service=model_service,

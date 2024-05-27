@@ -2,8 +2,8 @@ import pandas as pd
 from utils import prepare_data
 from tqdm import tqdm
 
-from lrp_explainer import PkaLRP
-# from lrp_explainer_sme import PkaLRP
+# from lrp_explainer import PkaLRP
+from lrp_explainer_sme import PkaLRP
 from pKa_model_service import PkaModelService
 from constants import Identificator
 
