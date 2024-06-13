@@ -31,7 +31,7 @@ if __name__ == "__main__":
     df = pd.read_csv(csv_path, index_col=0)
     df_test_splited_by_tanimoto = pd.read_csv(csv_logP_test_path, index_col=0)
 
-    model_name = 'gin_supervised_infomax_Lipophilicity'
+    model_name = 'MPNN_canonical_Lipophilicity'
     lipophilicity_model = load_pretrained(model_name)
     # lipophilicity_model.load_state_dict(torch.load(r'C:\work\DrugDiscovery\main_git\XAI_Chem\ml_part\weights\logP_dgllife_lipophilicity\GATPredictor_logP_best_loss.pth'))
 
@@ -46,9 +46,9 @@ if __name__ == "__main__":
         logP_smiles = row['Smiles']
         true_value = row['logP']
 
-        # g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=CanonicalAtomFeaturizer(), edge_featurizer=CanonicalBondFeaturizer(self_loop=True))
+        g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=CanonicalAtomFeaturizer(), edge_featurizer=CanonicalBondFeaturizer(self_loop=True))
         # g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=AttentiveFPAtomFeaturizer(), edge_featurizer=AttentiveFPBondFeaturizer(self_loop=True))
-        g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=PretrainAtomFeaturizer(), edge_featurizer=PretrainBondFeaturizer(self_loop=True))
+        # g = smiles_to_bigraph(logP_smiles, add_self_loop=True, node_featurizer=PretrainAtomFeaturizer(), edge_featurizer=PretrainBondFeaturizer(self_loop=True))
 
         g = g.to(device)
 
@@ -57,22 +57,22 @@ if __name__ == "__main__":
             # prediction = model(g, g.ndata['h'])
             
             # MPNN model:
-            # h = g.ndata.pop('h')
-            # e = g.edata.pop('e')
-            # prediction = model(g, h, e)
+            h = g.ndata.pop('h')
+            e = g.edata.pop('e')
+            prediction = model(g, h, e)
 
             # supervised models
-            node_feats = [
-                g.ndata.pop('atomic_number'),
-                g.ndata.pop('chirality_type')
-            ]
-            edge_feats = [
-                g.edata.pop('bond_type'),
-                g.edata.pop('bond_direction_type')
-            ]
-            node_feats = [n.to(device) for n in node_feats]
-            edge_feats = [e.to(device) for e in edge_feats]
-            prediction = model(g, node_feats, edge_feats)
+            # node_feats = [
+            #     g.ndata.pop('atomic_number'),
+            #     g.ndata.pop('chirality_type')
+            # ]
+            # edge_feats = [
+            #     g.edata.pop('bond_type'),
+            #     g.edata.pop('bond_direction_type')
+            # ]
+            # node_feats = [n.to(device) for n in node_feats]
+            # edge_feats = [e.to(device) for e in edge_feats]
+            # prediction = model(g, node_feats, edge_feats)
             
             print(prediction.item(), true_value)
             true_logP.append(true_value)
