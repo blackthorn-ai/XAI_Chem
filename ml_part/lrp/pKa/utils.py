@@ -30,7 +30,8 @@ def prepare_data():
     return SMILES_to_fgroup, SMILES_to_identificator, SMILES_to_cycle_type
 
 def get_color(value, cmap_type='coolwarm', vmin=-1, vmax=1):
-    norm = Normalize(vmin=vmin, vmax=vmax)
+    value *= (-1)
+    norm = Normalize(vmin=vmax * (-1), vmax=vmin * (-1))
     cmap = plt.get_cmap(cmap_type)
     sm = ScalarMappable(cmap=cmap, norm=norm)
     rgba_color = sm.to_rgba(value)

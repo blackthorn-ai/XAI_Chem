@@ -100,3 +100,50 @@ class PkaLRP:
         prediction, _ = self.model(bg, bg.ndata['h'], bg.edata['e'])
 
         return prediction
+
+    def extract_atoms_colors_from_relevances(self):
+        atoms_colors = {}
+        atoms = []
+        bonds_colors = {}
+        bonds = []
+
+        mol_with_F = PkaLRP.create_mol_as_bigraph(smiles=self.SMILES)
+        f_group_smiles = functional_group_to_smiles[self.fluorine_group]
+        fluorine_mol = PkaLRP.create_mol_as_bigraph(smiles=f_group_smiles)
+
+        f_group_matches = mol_with_F.GetSubstructMatches(fluorine_mol)
+
+        SME = get_color(self.importance_fluorine_group, vmin=-4.695, vmax=0)
+        if len(f_group_matches) != 0:
+            mol_with_F.GetAtoms()[f_group_matches[0][0]].SetProp("atomNote", str(round(self.importance_fluorine_group, 3)))
+
+        for match in f_group_matches:
+            for atom in match:
+                atoms.append(atom)
+                atoms_colors[atom] = SME
+        
+        for mol_edge_idx in range(mol_with_F.GetNumBonds()):
+            mol_begin_node = mol_with_F.GetBonds()[mol_edge_idx].GetBeginAtomIdx()
+            mol_end_node = mol_with_F.GetBonds()[mol_edge_idx].GetEndAtomIdx()
+
+            if mol_begin_node in atoms and mol_end_node in atoms:
+                bonds_colors[mol_edge_idx] = SME
+                bonds.append(mol_edge_idx)
+        
+        return mol_with_F, atoms, atoms_colors, bonds, bonds_colors
+
+
+    def save_molecule_with_relevances(self, output_png_path=None): 
+
+        drawer = rdMolDraw2D.MolDraw2DCairo(800, 470)
+
+        mol_with_F, atoms, atoms_colors, bonds, bonds_colors = self.extract_atoms_colors_from_relevances()
+
+        drawer.DrawMolecule(mol_with_F, highlightAtoms=atoms, highlightAtomColors=atoms_colors, 
+                            highlightBonds=bonds, highlightBondColors=bonds_colors)
+
+        drawer.FinishDrawing()
+
+        if output_png_path is not None:
+            with open(output_png_path, "wb") as png_file:
+                png_file.write(drawer.GetDrawingText())

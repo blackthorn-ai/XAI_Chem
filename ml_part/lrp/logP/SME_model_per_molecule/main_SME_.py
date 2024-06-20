@@ -30,6 +30,9 @@ if __name__ == '__main__':
         fluorine_group = SMILES_to_fgroup[SMILES]
         cycle_type = SMILES_to_cycle_type[SMILES]
 
+        if fluorine_group == 'non-F':
+            continue
+
         is_exist_in_train = False
         smiles_non_f = None
         for index, row in df_for_train.iterrows():
@@ -67,6 +70,10 @@ if __name__ == '__main__':
         )
 
         molecules_relevance_fluorine_group[SMILES] = logP_lrp.importance_fluorine_group
+
+        output_png_path = rf'data\lrp_results\logp\SME(correct)_difference_between_non_f_and_f\LogP_{SMILES}.png'
+        logP_lrp.save_molecule_with_relevances(output_png_path=output_png_path)
+
         # print(logP_lrp.importance_fluorine_group)
         # break
 
