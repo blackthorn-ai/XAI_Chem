@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 class RFTrain:
-    def __init__(self, smiles_filepath, X, y, smiles_column_name='smiles', is_pKa=True, k_folds=None):
+    def __init__(self, smiles_filepath, X, y, smiles_column_name=None, is_pKa=True, k_folds=None):
         with open(smiles_filepath, 'rb') as handle:
             self.smiles_to_index = pickle.load(handle)
 
