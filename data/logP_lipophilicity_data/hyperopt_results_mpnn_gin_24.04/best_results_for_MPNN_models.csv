@@ -1,0 +1,7 @@
+,model_name,train_r^2,train_mse,train_mae,oos_r^2,oos_mse,oos_mae
+0,MPNN_canonical_Lipophilicity,0.731,0.086,0.235,0.907,0.025,0.121
+1,MPNN_attentivefp_Lipophilicity,0.891,0.035,0.137,0.921,0.021,0.122
+2,gin_supervised_contextpred_Lipophilicity,0.465,0.17,0.337,0.922,0.021,0.118
+3,gin_supervised_infomax_Lipophilicity,0.77,0.073,0.215,0.838,0.043,0.163
+4,gin_supervised_edgepred_Lipophilicity,0.499,0.159,0.307,0.799,0.053,0.192
+5,gin_supervised_masking_Lipophilicity,0.727,0.087,0.226,0.889,0.029,0.147

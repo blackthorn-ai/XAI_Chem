@@ -1,0 +1,3 @@
+,model_name,train_r^2,train_mse,train_mae,oos_r^2,oos_mse,oos_mae
+0,gin_supervised_contextpred_Lipophilicity,0.686,0.1,0.232,0.907,0.025,0.125
+1,gin_supervised_edgepred_Lipophilicity,0.755,0.078,0.21,0.903,0.026,0.128
