@@ -1,0 +1,4 @@
+,params,cv_0_loss,cv_0_best_epoch,cv_0_run_name,cv_0_r^2,cv_0_mse,cv_0_mae,cv_1_loss,cv_1_best_epoch,cv_1_run_name,cv_1_r^2,cv_1_mse,cv_1_mae
+0,{'train_type': 'only_predictor'},0.048002561926841734,34,changeling-picard-44,0.838,0.048,0.174,0.07512259483337402,93,ferengi-spot-45,0.778,0.075,0.201
+1,{'train_type': 'only_predictor'},0.050316307693719864,65,empathic-spot-46,0.832,0.05,0.179,0.07194033116102219,80,crusher-queen-47,0.789,0.071,0.196
+2,{'train_type': 'only_predictor'},0.051415936648845674,62,emissary-kirk-48,0.828,0.052,0.179,0.07311182990670204,78,klingon-tuvix-49,0.785,0.072,0.206

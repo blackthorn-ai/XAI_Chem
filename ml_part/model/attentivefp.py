@@ -37,9 +37,16 @@ class AttentiveFPRegressor(BaseGNNRegressor):
                                   gnn_out_feats, dropout)
         self.readout = AttentiveFPReadout(gnn_out_feats, num_timesteps, dropout)
 
-    def freeze_model_for_finetune(self):
-        self.gnn.train(False)
-        self.readout.train(True)
+    def train_mode(self, train_type: str):
+        if train_type == 'all_layers':
+            self.gnn.train()
+            self.readout.train()
+        elif train_type == 'predictor_and_readout':
+            self.gnn.train()
+            self.readout.train()
+        else:
+            self.gnn.eval()
+            self.readout.train()
 
 
 class AttentiveFPRegressorBypass(BaseGNNRegressorBypass):

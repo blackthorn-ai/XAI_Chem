@@ -1,0 +1,20 @@
+,pKa,Smiles,identificator
+154,9.12,FC1(F)CC(N)CCC1,Primary amine
+168,9.58,NC(C1)CC21CC(F)(F)C2,Primary amine
+162,8.76,NC1CC1,Primary amine
+104,8.1,NC1(CF)CCC1,Primary amine
+151,7.54,FC1(F)C(N)CCC1,Primary amine
+105,9.86,NC1CCC1,Primary amine
+158,9.57,FC1(F)CCC(N)CCC1,Primary amine
+128,9.01,FC(F)(F)C1CNCCC1,Secondary amine
+159,7.59,CCC(F)(F)CN,Primary amine
+144,10.36,NCCCC(F)([H])[H],Primary amine
+166,10.21,NC(C1)CC21CCC2,Primary amine
+165,10.5,CCCCN,Primary amine
+94,7.11,F[C@@H]1CNC[C@H]1F,Secondary amine
+65,11.28,CC1(NC2)CC2C1,Secondary amine
+129,9.55,FC([H])(F)C1CNCCC1,Secondary amine
+131,8.97,FC(F)(F)C1CNCC1,Secondary amine
+96,6.79,FC1(F)CNCCC1,Secondary amine
+63,11.23,C1(NC2)CC2C1,Secondary amine
+125,7.2,NCC([H])(F)F,Primary amine
