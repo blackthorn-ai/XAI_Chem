@@ -13,10 +13,9 @@ import os
 sys.path.append("..") 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from process import run
 from torch.utils.data import DataLoader
 from utils import  load_model
-from utils import get_configure, \
+from utils import get_configure, calculate_metrics,\
     collate_molgraphs, load_model, predict, load_dataset
 
 
@@ -48,11 +47,13 @@ def run_an_eval_epoch(smiles_list,args, model, data_loader):
         output_data['pKa_acidic'] = pka_acidic_predictions[:, 0]
         output_data['pKa_basic'] = pka_basic_predictions[:, 0]
         df = pd.DataFrame(output_data)
-        out=pd.read_csv(r"C:\work\DrugDiscovery\RT_LogP_with_pKa_model\RTlogD\RD_dataset\test_logP_data.csv")
+        out=pd.read_csv(r"C:\work\DrugDiscovery\main_git\XAI_Chem\data\logP_lipophilicity_data\gnn_cv\test.csv")
         out['logD_predicted']=round(df['standard_value'],3)
         out['logP_predicted']=round(df['logp'],3)
         out['pKa_acidic_predicted']=round(df['pKa_acidic'],3)
         out['pKa_basic_predicted']=round(df['pKa_basic'],3)
+        print(out)
+        print(calculate_metrics(pred_values=out['logP_predicted'].tolist(), true_values=out['logP'].tolist()))
         # out.to_csv(r'C:\work\DrugDiscovery\RT_LogP_with_pKa_model\RTlogD\RD_dataset\test_logP_data_evaluated.csv', index=False)
 
 
@@ -75,7 +76,7 @@ def main(smiles_list,args, exp_config, test_set):
     test_loader = DataLoader(dataset=test_set, batch_size=exp_config['batch_size'],
                              collate_fn=collate_molgraphs, num_workers=args['num_workers'])
     model = load_model(exp_config).to(args['device'])
-    checkpoint = torch.load(r"C:\work\DrugDiscovery\RT_LogP_with_pKa_model\RTlogD\final_model/RTlogD/model_pretrain_76.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
+    checkpoint = torch.load(r"C:\work\DrugDiscovery\main_git\XAI_Chem\ml_part\weights\logP\logP_RTLogD_best_loss_comfy-wave-9.pth",map_location=torch.device('cpu'))#my_model/CRT76-logD/model_pretrain_76.pth"
     model.load_state_dict(checkpoint)
     run_an_eval_epoch(smiles_list,args, model, test_loader)
 
@@ -91,8 +92,9 @@ if __name__ == '__main__':
         exp_config = json.load(f)
     args['device'] = torch.device('cpu')
     args = setup(args)
-    test_set = pd.read_csv(r'C:\work\DrugDiscovery\RT_LogP_with_pKa_model\RTlogD\RD_dataset\test_logP_data.csv')
+    test_set = pd.read_csv(r'C:\work\DrugDiscovery\main_git\XAI_Chem\data\logP_lipophilicity_data\gnn_cv\test.csv')
     test_set['logp']=np.nan
+    test_set['smiles'] = test_set['Smiles'].tolist()
     test_set['exp']=np.nan
     test_set['standard_value']=np.nan
     smiles_list=test_set['smiles'].to_list()
